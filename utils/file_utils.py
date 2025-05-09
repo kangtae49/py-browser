@@ -17,11 +17,11 @@ def get_root_path() -> Path:
     return root_path.resolve()
 
 def get_resource_path(path: Union[str | Path] | None = None) -> Path:
-    resource_path = (getattr(sys, "_MEIPASS", Path(".")) / "resources")
+    resource_path = Path(getattr(sys, "_MEIPASS", ".")).joinpath("resources")
     if path is None:
         return resource_path.resolve()
     else:
-        return (resource_path / path).resolve()
+        return resource_path.joinpath(path).resolve()
     
 def quote(s: str) -> str:
     return s.replace("\\", "\\\\").replace("'", "\\'").replace('"', '\\"')
