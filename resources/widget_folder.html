@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta http-equiv="Content-Security-Policy" content="default-src * 'unsafe-inline' 'unsafe-eval' data: blob:;">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Folder</title>
+    <link rel="stylesheet" href="fontawesome/css/all.min.css">
+    <script src="py-browser.js"></script>
+    <style>
+      body { margin: 0; padding: 0; height: 100vh; display: flex;}
+      .container { padding:0; margin:0; }
+      .tree { padding: 0 0 0 0px; margin: 0; font-size: 0.9em}
+      .tree ul { padding: 0 0 0 10px; margin: 0;}
+      .tree li { list-style: none; cursor: pointer; padding: 0; white-space: nowrap;}
+      .fa-folder { color: #f4a261; margin-right: 5px;}
+      .fa-folder-open { color: #f4a261; margin-right: 5px;}
+      .fa-file { color: #2a9d8f; margin-right: 5px;}
+      .fa-file-code { color: #2a9d8f; margin-right: 5px;}  
+    </style>
+    <script>
+        
+        // document.addEventListener('DOMContentLoaded', function() {
+        // });
+
+        function onload_widget(){
+          call_list_directory();
+        }
+
+
+        function call_list_directory(parent=null) {
+          post_message({
+            action: "list_directory",
+            target: "widget_folder",
+            path: parent,
+            callback: "appendData",
+          });
+        }
+
+        function call_open_file(path) {
+          post_message({
+            target: "widget_content",
+            action: "open_file",
+            path: path,
+          });
+        }
+
+        function appendData(param) {
+          const res = JSON.parse(param);
+          let parent_node = document.querySelector("#file-tree");
+
+          if (res.parent == null) {
+            parent_node.innerHTML = "";
+          } else {
+            parent_node = document.querySelector("li[data-path='" + encodeURIComponent(res.parent) + "']");
+          }
+          const ul = document.createElement("ul");
+          parent_node.appendChild(ul);
+          
+          for (const item of res.data) {
+            const li = document.createElement("li");
+            if (item.is_folder) {
+              li.dataset.is_folder = "true";
+              li.dataset.expanded = "false";
+              li.dataset.path = encodeURIComponent(item.path);
+              li.innerHTML = `<i class="fa-solid fa-folder"></i><span>${item.name}</span>`;
+              li.addEventListener("click", function(event) {
+                event.stopPropagation();
+                const isExpanded = li.dataset.expanded === "true";
+                li.dataset.expanded = !isExpanded;
+                if (isExpanded) {
+                  li.querySelector("ul").remove();
+                } else {
+                  call_list_directory(item.path);
+                }
+              });
+            } else {
+              li.innerHTML = `<i class="fa-solid fa-file-code"></i><span>${item.name}</span>`;
+              li.addEventListener("click", function(event) {
+                event.stopPropagation();
+                call_open_file(item.path);
+              });
+            }
+            ul.appendChild(li);
+          }
+        }
+
+    </script>
+  </head>
+
+  <body>
+  <div class="container">
+    <div id="file-tree" class="tree">
+      <!--
+      <ul class="tree">
+        <li class="folder">
+          <i class="fa-solid fa-folder"></i><span>Folder 1</span>
+          <ul>
+            <li>
+              <i class="fa-solid fa-folder"></i><span>Folder 2</span>
+              <ul>
+                <li><i class="fa-solid fa-file-code"></i><span>File 1</span></li>
+                <li><i class="fa-solid fa-file-code"></i><span>File 2</span></li>
+              </ul>
+            </li>
+            <li><i class="fa-solid fa-file-code"></i><span>File 1</span></li>
+            <li><i class="fa-solid fa-file-code"></i><span>File 2</span></li>
+          </ul>
+        </li>
+      </ul>
+      -->
+    </div>
+  </div>
+  </body>
+</html>
