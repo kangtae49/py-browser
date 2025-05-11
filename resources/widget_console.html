@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta http-equiv="Content-Security-Policy" content="default-src * 'unsafe-inline' 'unsafe-eval' data: blob:;">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Folder</title>
+    <link rel="stylesheet" href="fontawesome/css/all.min.css">
+    <script src="zod-3.24.4.js"></script>
+    <script src="py-browser.js"></script>
+    <style>
+      body { margin: 0; padding: 0;  }
+      .container { padding:0; margin:0; width: 100%; height: 100%;}
+      #input { padding:0; margin: 0; width: 95%; }
+    </style>
+    <script>
+      Pb.onLoad(function() {
+        const input = document.getElementById("input");
+        const consoleOutput = document.getElementById("console-output");
+
+        input.addEventListener("keydown", function(event) {
+          if (event.key === "Enter") {
+            const command = input.value;
+            let output = eval(command);
+            console.log(String(output));
+          }
+        });
+        
+      });
+
+
+      function fillcmd(element) {
+        const command = element.innerText;
+        input.value = command;
+        input.focus();
+      }
+
+      function append_console_log(obj) {
+        const div = document.createElement("div");
+        div.textContent = obj.msg;
+        document.querySelector("#console-output").prepend(div);
+      }
+
+
+
+    </script>
+  </head>
+
+  <body>
+    <div class="container">
+        <div id="console">
+          <div id="console-input">
+            <input type="text" id="input" placeholder="Type here..."/>
+          </div>
+          <div id="console-output"></div>
+        </div>
+    </div>
+  </body>
+</html>

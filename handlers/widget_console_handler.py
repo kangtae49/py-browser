@@ -1,9 +1,11 @@
 from utils.file_utils import get_resource_path
-from models.base import BaseMsg
+from models.base import ConsoleReq
 import wx
+from models.base import WidgetId, BaseMsg
 
-class WidgetContentHandler:
-    def __init__(self, browser, webview, widget_id):
+
+class WidgetConsoleHandler:
+    def __init__(self, browser, webview, widget_id: WidgetId):
         self._browser = browser
         self._webview = webview
         self._widget_id = widget_id
@@ -24,5 +26,11 @@ class WidgetContentHandler:
         action = getattr(self, base.action, None)
         if action:
             action(param)
+    
+    def console_log(self, param: str):
+        req = ConsoleReq.model_validate_json(param)
 
+        webview = self._browser._widgets.get(req.receiver_id)
+        script = f"{req.callback}({repr(req.model_dump_json())})"
+        webview.RunScriptAsync(script)
     

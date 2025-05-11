@@ -23,5 +23,3 @@ def get_resource_path(path: Union[str | Path] | None = None) -> Path:
     else:
         return resource_path.joinpath(path).resolve()
     
-def quote(s: str) -> str:
-    return s.replace("\\", "\\\\").replace("'", "\\'").replace('"', '\\"')

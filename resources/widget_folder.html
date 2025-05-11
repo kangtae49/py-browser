@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Folder</title>
     <link rel="stylesheet" href="fontawesome/css/all.min.css">
+    <script src="zod-3.24.4.js"></script>
     <script src="py-browser.js"></script>
     <style>
       body { margin: 0; padding: 0; height: 100vh; display: flex;}
@@ -19,45 +20,45 @@
       .fa-file-code { color: #2a9d8f; margin-right: 5px;}  
     </style>
     <script>
-        
-        // document.addEventListener('DOMContentLoaded', function() {
-        // });
-
-        function onload_widget(){
+        Pb.onLoad(function() {
           call_list_directory();
-        }
+        });
 
 
-        function call_list_directory(parent=null) {
-          post_message({
+        function call_list_directory(path=null) {
+          Pb.sendMessage(FolderReq.parse({
+            sender_id : WidgetId.enum.WIDGET_FOLDER,
+            receiver_id : WidgetId.enum.WIDGET_FOLDER,
             action: "list_directory",
-            target: "widget_folder",
-            path: parent,
             callback: "appendData",
-          });
+            path: path,
+          }));
         }
 
         function call_open_file(path) {
-          post_message({
-            target: "widget_content",
+          Pb.sendMessage(FolderReq.parse({
+            sender_id : WidgetId.enum.WIDGET_FOLDER,
+            receiver_id : WidgetId.enum.WIDGET_FOLDER,
             action: "open_file",
+            callback: null,
             path: path,
-          });
+          }));
         }
 
         function appendData(param) {
-          const res = JSON.parse(param);
+          const jres = JSON.parse(param);
+          const res = FolderListRes.parse(jres);
           let parent_node = document.querySelector("#file-tree");
 
-          if (res.parent == null) {
+          if (res.path == null) {
             parent_node.innerHTML = "";
           } else {
-            parent_node = document.querySelector("li[data-path='" + encodeURIComponent(res.parent) + "']");
+            parent_node = document.querySelector("li[data-path='" + encodeURIComponent(res.path) + "']");
           }
           const ul = document.createElement("ul");
           parent_node.appendChild(ul);
           
-          for (const item of res.data) {
+          for (const item of res.items) {
             const li = document.createElement("li");
             if (item.is_folder) {
               li.dataset.is_folder = "true";
