@@ -1,0 +1,307 @@
+<html>
+    <head>
+        <script src="resources/fontawesome/js/all.min.js"></script>
+        <style>
+            body {
+                padding:0;
+                margin: 0;
+            }
+            .container {
+                padding: 0;
+                margin: 0;
+            }
+            .top-bar {
+                position: fixed;
+                top: 10px;
+                width: 100%;
+            }
+
+            .slider-container { width: 100%; height: 10px; }
+            .slider { width: 100%; height: 2px; }
+            .ext-container { display: flex; justify-content: space-between; }
+            .ext-container .ext-sub { display: flex; }
+            .ext-container .ext-sub .ext { padding-left: 5px; }
+            
+            .gallery { display: flex; flex-wrap: wrap; gap: 5px; padding-top: 50px; }
+            .gallery .media { width: 20%; }
+            .gallery .media * { width: 100%; height: 100%; object-fit: scale-down; /* object-fit: contain; */ }
+            .gallery .media .file { width: 100%; height: 100%; overflow: hidden; text-overflow: ellipsis; }
+
+            .filelist {padding: 80px 0 0 0;}
+
+            .file-table {
+                display: flex;
+                flex-direction: column;
+                border: 1px solid #ccc;
+                font-family: sans-serif;
+            }
+
+            .file-header, .file-row {
+                display: flex;
+            }
+
+            .file-header {
+                background-color: #f0f0f0;
+                font-weight: bold;
+                }
+
+            .cell {
+                flex: 5;
+                padding: 8px 12px;
+                border-bottom: 1px solid #ddd;
+                box-sizing: border-box;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+            }
+            .file-cell {
+                flex: 20;
+                padding: 8px 12px;
+                border-bottom: 1px solid #ddd;
+                box-sizing: border-box;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+            }
+
+            .fa-folder { color: #f4a261; margin-right: 5px;}
+            .fa-folder-open { color: #f4a261; margin-right: 5px;}
+            .fa-file { color: #2a9d8f; margin-right: 5px;}
+            .fa-file-code { color: #2a9d8f; margin-right: 5px;}  
+            
+            .fa-file-code { color: #2a9d8f; margin-right: 5px;}  
+            .fa-images { color: #2a9d8f; margin-right: 5px;}  
+            .fa-video { color: #2a9d8f; margin-right: 5px;}  
+            .fa-volume-high { color: #2a9d8f; margin-right: 5px;}  
+            .fa-ellipsis { color: #2a9d8f; margin-right: 5px;}  
+
+            .fa-list { color: #2a9d8f; margin-right: 5px;}  
+            .fa-table-cells { color: #2a9d8f; margin-right: 5px;}  
+            
+        </style>
+        <script>
+
+
+        </script>
+    </head>
+    <body>
+        <div class="container">
+            <div class="top-bar">
+                <div class="ext-container">
+                    <div class="ext-sub">
+                        <div class="ext"><i class="fa-solid fa-folder"></i></div>
+                        <div class="ext"><i class="fa-solid fa-file"></i></div>
+                        <div class="ext"><i class="fa-solid fa-images"></i></div>
+                        <div class="ext"><i class="fa-solid fa-video"></i></div>
+                        <div class="ext"><i class="fa-solid fa-volume-high"></i></div>
+                        <div class="ext"><i class="fa-solid fa-ellipsis"></i></div>
+                    </div>
+                    <div class="ext-sub">
+                        <div class="ext"><i class="fa-solid fa-list"></i></div>
+                        <div class="ext"><i class="fa-solid fa-table-cells"></i></i></div>
+                    </div>
+                    <!--
+                        <div><i class="fas fa-th-large"></i></div>
+                        <div><i class="fas fa-th-list"></i></div>
+                    -->
+                </div>
+                <div class="slider-container">
+                    <input class="slider" type="range" id="volume" name="volume" min="0" max="100" value="50">
+                </div>
+                <div class="file-table">
+                    <div class="file-header">
+                        <div class="file-cell">name</div>
+                        <div class="cell">size</div>
+                        <div class="cell">ext</div>
+                        <div class="cell">date</div>
+                    </div>
+                </div>
+            </div>
+            <div class="gallery" style="display:none;">
+                <div class="media"><div class="file">asfaslfja&#8203;aslfkjaslk&#8203;fjasl;dfj&#8203;akl;fj;alkfjasklfj.txt</div></div>
+                <div class="media"><div class="file">asfaslfj&#8203;aaslfk&#8203;jaslkfjasl&#8203;;dfjakl;fj;alkfjasklfj.txt</div></div>
+                <div class="media"><div class="file">asfaslfjaa&#8203;slfkjaslk&#8203;fjasl;dfjak&#8203;l;fj;alkfjasklfj.txt</div></div>
+                <div class="media"><video controls><source src="20190602_181216.mp4" type="video/mp4" /></video></div>
+                <div class="media"><img src="header-logo.bmp" title="Image 2"></div>
+                <div class="media"><img src="header-logo.jpg" tltle="Image 2"></div>
+                <div class="media"><img src="header-logo.png" title="Image 2"></div>
+                <div class="media"><audio controls><source src="내곁에서%20떠나가지%20말아요.mp3" type="audio/mp3" alt="Image 3"  /></audio></div>
+                <div class="media"><video controls><source src="20190602_181216.mp4" type="video/mp4" alt="Image 1"  /></video></div>
+                <div class="media"><div class="file">asfaslfja&#8203;aslfkjaslk&#8203;fjasl;dfj&#8203;akl;fj;alkfjasklfj.txt</div></div>
+                <div class="media"><div class="file">asfaslfj&#8203;aaslfk&#8203;jaslkfjasl&#8203;;dfjakl;fj;alkfjasklfj.txt</div></div>
+                <div class="media"><div class="file">asfaslfjaa&#8203;slfkjaslk&#8203;fjasl;dfjak&#8203;l;fj;alkfjasklfj.txt</div></div>
+                <div class="media"><video controls><source src="20190602_181216.mp4" type="video/mp4" /></video></div>
+                <div class="media"><img src="header-logo.bmp" title="Image 2"></div>
+                <div class="media"><img src="header-logo.jpg" tltle="Image 2"></div>
+                <div class="media"><img src="header-logo.png" title="Image 2"></div>
+                <div class="media"><audio controls><source src="내곁에서%20떠나가지%20말아요.mp3" type="audio/mp3" alt="Image 3"  /></audio></div>
+                <div class="media"><video controls><source src="20190602_181216.mp4" type="video/mp4" alt="Image 1"  /></video></div>
+                <div class="media"><div class="file">asfaslfja&#8203;aslfkjaslk&#8203;fjasl;dfj&#8203;akl;fj;alkfjasklfj.txt</div></div>
+                <div class="media"><div class="file">asfaslfj&#8203;aaslfk&#8203;jaslkfjasl&#8203;;dfjakl;fj;alkfjasklfj.txt</div></div>
+                <div class="media"><div class="file">asfaslfjaa&#8203;slfkjaslk&#8203;fjasl;dfjak&#8203;l;fj;alkfjasklfj.txt</div></div>
+                <div class="media"><video controls><source src="20190602_181216.mp4" type="video/mp4" /></video></div>
+                <div class="media"><img src="header-logo.bmp" title="Image 2"></div>
+                <div class="media"><img src="header-logo.jpg" tltle="Image 2"></div>
+                <div class="media"><img src="header-logo.png" title="Image 2"></div>
+                <div class="media"><audio controls><source src="내곁에서%20떠나가지%20말아요.mp3" type="audio/mp3" alt="Image 3"  /></audio></div>
+                <div class="media"><video controls><source src="20190602_181216.mp4" type="video/mp4" alt="Image 1"  /></video></div>
+                <div class="media"><div class="file">asfaslfja&#8203;aslfkjaslk&#8203;fjasl;dfj&#8203;akl;fj;alkfjasklfj.txt</div></div>
+                <div class="media"><div class="file">asfaslfj&#8203;aaslfk&#8203;jaslkfjasl&#8203;;dfjakl;fj;alkfjasklfj.txt</div></div>
+                <div class="media"><div class="file">asfaslfjaa&#8203;slfkjaslk&#8203;fjasl;dfjak&#8203;l;fj;alkfjasklfj.txt</div></div>
+                <div class="media"><video controls><source src="20190602_181216.mp4" type="video/mp4" /></video></div>
+                <div class="media"><img src="header-logo.bmp" title="Image 2"></div>
+                <div class="media"><img src="header-logo.jpg" tltle="Image 2"></div>
+                <div class="media"><img src="header-logo.png" title="Image 2"></div>
+                <div class="media"><audio controls><source src="내곁에서%20떠나가지%20말아요.mp3" type="audio/mp3" alt="Image 3"  /></audio></div>
+                <div class="media"><video controls><source src="20190602_181216.mp4" type="video/mp4" alt="Image 1"  /></video></div>
+                <div class="media"><div class="file">asfaslfja&#8203;aslfkjaslk&#8203;fjasl;dfj&#8203;akl;fj;alkfjasklfj.txt</div></div>
+                <div class="media"><div class="file">asfaslfj&#8203;aaslfk&#8203;jaslkfjasl&#8203;;dfjakl;fj;alkfjasklfj.txt</div></div>
+                <div class="media"><div class="file">asfaslfjaa&#8203;slfkjaslk&#8203;fjasl;dfjak&#8203;l;fj;alkfjasklfj.txt</div></div>
+                <div class="media"><video controls><source src="20190602_181216.mp4" type="video/mp4" /></video></div>
+                <div class="media"><img src="header-logo.bmp" title="Image 2"></div>
+                <div class="media"><img src="header-logo.jpg" tltle="Image 2"></div>
+                <div class="media"><img src="header-logo.png" title="Image 2"></div>
+                <div class="media"><audio controls><source src="내곁에서%20떠나가지%20말아요.mp3" type="audio/mp3" alt="Image 3"  /></audio></div>
+                <div class="media"><video controls><source src="20190602_181216.mp4" type="video/mp4" alt="Image 1"  /></video></div>
+                <div class="media"><div class="file">asfaslfja&#8203;aslfkjaslk&#8203;fjasl;dfj&#8203;akl;fj;alkfjasklfj.txt</div></div>
+                <div class="media"><div class="file">asfaslfj&#8203;aaslfk&#8203;jaslkfjasl&#8203;;dfjakl;fj;alkfjasklfj.txt</div></div>
+                <div class="media"><div class="file">asfaslfjaa&#8203;slfkjaslk&#8203;fjasl;dfjak&#8203;l;fj;alkfjasklfj.txt</div></div>
+                <div class="media"><video controls><source src="20190602_181216.mp4" type="video/mp4" /></video></div>
+                <div class="media"><img src="header-logo.bmp" title="Image 2"></div>
+                <div class="media"><img src="header-logo.jpg" tltle="Image 2"></div>
+                <div class="media"><img src="header-logo.png" title="Image 2"></div>
+                <div class="media"><audio controls><source src="내곁에서%20떠나가지%20말아요.mp3" type="audio/mp3" alt="Image 3"  /></audio></div>
+                <div class="media"><video controls><source src="20190602_181216.mp4" type="video/mp4" alt="Image 1"  /></video></div>
+                <div class="media"><div class="file">asfaslfja&#8203;aslfkjaslk&#8203;fjasl;dfj&#8203;akl;fj;alkfjasklfj.txt</div></div>
+                <div class="media"><div class="file">asfaslfj&#8203;aaslfk&#8203;jaslkfjasl&#8203;;dfjakl;fj;alkfjasklfj.txt</div></div>
+                <div class="media"><div class="file">asfaslfjaa&#8203;slfkjaslk&#8203;fjasl;dfjak&#8203;l;fj;alkfjasklfj.txt</div></div>
+                <div class="media"><video controls><source src="20190602_181216.mp4" type="video/mp4" /></video></div>
+                <div class="media"><img src="header-logo.bmp" title="Image 2"></div>
+                <div class="media"><img src="header-logo.jpg" tltle="Image 2"></div>
+                <div class="media"><img src="header-logo.png" title="Image 2"></div>
+                <div class="media"><audio controls><source src="내곁에서%20떠나가지%20말아요.mp3" type="audio/mp3" alt="Image 3"  /></audio></div>
+                <div class="media"><video controls><source src="20190602_181216.mp4" type="video/mp4" alt="Image 1"  /></video></div>
+                <div class="media"><div class="file">asfaslfja&#8203;aslfkjaslk&#8203;fjasl;dfj&#8203;akl;fj;alkfjasklfj.txt</div></div>
+                <div class="media"><div class="file">asfaslfj&#8203;aaslfk&#8203;jaslkfjasl&#8203;;dfjakl;fj;alkfjasklfj.txt</div></div>
+                <div class="media"><div class="file">asfaslfjaa&#8203;slfkjaslk&#8203;fjasl;dfjak&#8203;l;fj;alkfjasklfj.txt</div></div>
+                <div class="media"><video controls><source src="20190602_181216.mp4" type="video/mp4" /></video></div>
+                <div class="media"><img src="header-logo.bmp" title="Image 2"></div>
+                <div class="media"><img src="header-logo.jpg" tltle="Image 2"></div>
+                <div class="media"><img src="header-logo.png" title="Image 2"></div>
+                <div class="media"><audio controls><source src="내곁에서%20떠나가지%20말아요.mp3" type="audio/mp3" alt="Image 3"  /></audio></div>
+                <div class="media"><video controls><source src="20190602_181216.mp4" type="video/mp4" alt="Image 1"  /></video></div>
+            </div>
+            <div class="filelist" >
+                
+                <div class="file-table">
+                    <div class="file-row"><div class="file-cell"><i class="fa-solid fa-file"></i><span class="filename">report_asfkljaslfkja;slfdja;skldfj;klfjsd.pdf</span></div><div class="cell">12 MB</div><div class="cell">PDF</div><div class="cell">2025-05-09</div></div>
+                    <div class="file-row"><div class="file-cell"><i class="fa-solid fa-file"></i><span class="filename">report_asfkljaslfkja;slfdja;skldfj;klfjsd.pdf</span></div><div class="cell">1124123424242 MB</div><div class="cell">PDF</div><div class="cell">2025-05-09</div></div>
+                    <div class="file-row"><div class="file-cell"><i class="fa-solid fa-file"></i><span class="filename">report_asfkljaslfkja;slfdja;skldfj;klfjsd.pdf</span></div><div class="cell">1.2 MB</div><div class="cell">PDF</div><div class="cell">2025-05-09</div></div>
+                    <div class="file-row"><div class="file-cell"><i class="fa-solid fa-file"></i><span class="filename">report_asfkljaslfkja;slfdja;skldfj;klfjsd.pdf</span></div><div class="cell">1.2 MB</div><div class="cell">PDF</div><div class="cell">2025-05-09</div></div>
+                    <div class="file-row"><div class="file-cell"><i class="fa-solid fa-file"></i><span class="filename">report_asfkljaslfkja;slfdja;skldfj;klfjsd.pdf</span></div><div class="cell">1.2 MB</div><div class="cell">PDF</div><div class="cell">2025-05-09</div></div>
+                    <div class="file-row"><div class="file-cell"><i class="fa-solid fa-file"></i><span class="filename">report_asfkljaslfkja;slfdja;skldfj;klfjsd.pdf</span></div><div class="cell">1.2 MB</div><div class="cell">PDF</div><div class="cell">2025-05-09</div></div>
+                    <div class="file-row"><div class="file-cell"><i class="fa-solid fa-file"></i><span class="filename">report_asfkljaslfkja;slfdja;skldfj;klfjsd.pdf</span></div><div class="cell">1.2 MB</div><div class="cell">PDF</div><div class="cell">2025-05-09</div></div>
+                    <div class="file-row"><div class="file-cell"><i class="fa-solid fa-file"></i><span class="filename">report_asfkljaslfkja;slfdja;skldfj;klfjsd.pdf</span></div><div class="cell">1.2 MB</div><div class="cell">PDF</div><div class="cell">2025-05-09</div></div>
+                    <div class="file-row"><div class="file-cell"><i class="fa-solid fa-file"></i><span class="filename">report_asfkljaslfkja;slfdja;skldfj;klfjsd.pdf</span></div><div class="cell">1.2 MB</div><div class="cell">PDF</div><div class="cell">2025-05-09</div></div>
+                    <div class="file-row"><div class="file-cell"><i class="fa-solid fa-file"></i><span class="filename">report_asfkljaslfkja;slfdja;skldfj;klfjsd.pdf</span></div><div class="cell">1.2 MB</div><div class="cell">PDF</div><div class="cell">2025-05-09</div></div>
+                    <div class="file-row"><div class="file-cell"><i class="fa-solid fa-file"></i><span class="filename">report_asfkljaslfkja;slfdja;skldfj;klfjsd.pdf</span></div><div class="cell">1.2 MB</div><div class="cell">PDF</div><div class="cell">2025-05-09</div></div>
+                    <div class="file-row"><div class="file-cell"><i class="fa-solid fa-file"></i><span class="filename">report_asfkljaslfkja;slfdja;skldfj;klfjsd.pdf</span></div><div class="cell">1.2 MB</div><div class="cell">PDF</div><div class="cell">2025-05-09</div></div>
+                    <div class="file-row"><div class="file-cell"><i class="fa-solid fa-file"></i><span class="filename">report_asfkljaslfkja;slfdja;skldfj;klfjsd.pdf</span></div><div class="cell">1.2 MB</div><div class="cell">PDF</div><div class="cell">2025-05-09</div></div>
+                    <div class="file-row"><div class="file-cell"><i class="fa-solid fa-file"></i><span class="filename">report_asfkljaslfkja;slfdja;skldfj;klfjsd.pdf</span></div><div class="cell">1.2 MB</div><div class="cell">PDF</div><div class="cell">2025-05-09</div></div>
+                    <div class="file-row"><div class="file-cell"><i class="fa-solid fa-file"></i><span class="filename">report_asfkljaslfkja;slfdja;skldfj;klfjsd.pdf</span></div><div class="cell">1.2 MB</div><div class="cell">PDF</div><div class="cell">2025-05-09</div></div>
+                    <div class="file-row"><div class="file-cell"><i class="fa-solid fa-file"></i><span class="filename">report_asfkljaslfkja;slfdja;skldfj;klfjsd.pdf</span></div><div class="cell">1.2 MB</div><div class="cell">PDF</div><div class="cell">2025-05-09</div></div>
+                    <div class="file-row"><div class="file-cell"><i class="fa-solid fa-file"></i><span class="filename">report_asfkljaslfkja;slfdja;skldfj;klfjsd.pdf</span></div><div class="cell">1.2 MB</div><div class="cell">PDF</div><div class="cell">2025-05-09</div></div>
+                    <div class="file-row"><div class="file-cell"><i class="fa-solid fa-file"></i><span class="filename">report_asfkljaslfkja;slfdja;skldfj;klfjsd.pdf</span></div><div class="cell">1.2 MB</div><div class="cell">PDF</div><div class="cell">2025-05-09</div></div>
+                    <div class="file-row"><div class="file-cell"><i class="fa-solid fa-file"></i><span class="filename">report_asfkljaslfkja;slfdja;skldfj;klfjsd.pdf</span></div><div class="cell">1.2 MB</div><div class="cell">PDF</div><div class="cell">2025-05-09</div></div>
+                    <div class="file-row"><div class="file-cell"><i class="fa-solid fa-file"></i><span class="filename">report_asfkljaslfkja;slfdja;skldfj;klfjsd.pdf</span></div><div class="cell">1.2 MB</div><div class="cell">PDF</div><div class="cell">2025-05-09</div></div>
+                    <div class="file-row"><div class="file-cell"><i class="fa-solid fa-file"></i><span class="filename">report_asfkljaslfkja;slfdja;skldfj;klfjsd.pdf</span></div><div class="cell">1.2 MB</div><div class="cell">PDF</div><div class="cell">2025-05-09</div></div>
+                    <div class="file-row"><div class="file-cell"><i class="fa-solid fa-file"></i><span class="filename">report_asfkljaslfkja;slfdja;skldfj;klfjsd.pdf</span></div><div class="cell">1.2 MB</div><div class="cell">PDF</div><div class="cell">2025-05-09</div></div>
+                    <div class="file-row"><div class="file-cell"><i class="fa-solid fa-file"></i><span class="filename">report_asfkljaslfkja;slfdja;skldfj;klfjsd.pdf</span></div><div class="cell">1.2 MB</div><div class="cell">PDF</div><div class="cell">2025-05-09</div></div>
+                    <div class="file-row"><div class="file-cell"><i class="fa-solid fa-file"></i><span class="filename">report_asfkljaslfkja;slfdja;skldfj;klfjsd.pdf</span></div><div class="cell">1.2 MB</div><div class="cell">PDF</div><div class="cell">2025-05-09</div></div>
+                    <div class="file-row"><div class="file-cell"><i class="fa-solid fa-file"></i><span class="filename">report_asfkljaslfkja;slfdja;skldfj;klfjsd.pdf</span></div><div class="cell">1.2 MB</div><div class="cell">PDF</div><div class="cell">2025-05-09</div></div>
+                    <div class="file-row"><div class="file-cell"><i class="fa-solid fa-file"></i><span class="filename">report_asfkljaslfkja;slfdja;skldfj;klfjsd.pdf</span></div><div class="cell">1.2 MB</div><div class="cell">PDF</div><div class="cell">2025-05-09</div></div>
+                    <div class="file-row"><div class="file-cell"><i class="fa-solid fa-file"></i><span class="filename">report_asfkljaslfkja;slfdja;skldfj;klfjsd.pdf</span></div><div class="cell">1.2 MB</div><div class="cell">PDF</div><div class="cell">2025-05-09</div></div>
+                    <div class="file-row"><div class="file-cell"><i class="fa-solid fa-file"></i><span class="filename">report_asfkljaslfkja;slfdja;skldfj;klfjsd.pdf</span></div><div class="cell">1.2 MB</div><div class="cell">PDF</div><div class="cell">2025-05-09</div></div>
+                    <div class="file-row"><div class="file-cell"><i class="fa-solid fa-file"></i><span class="filename">report_asfkljaslfkja;slfdja;skldfj;klfjsd.pdf</span></div><div class="cell">1.2 MB</div><div class="cell">PDF</div><div class="cell">2025-05-09</div></div>
+                    <div class="file-row"><div class="file-cell"><i class="fa-solid fa-file"></i><span class="filename">report_asfkljaslfkja;slfdja;skldfj;klfjsd.pdf</span></div><div class="cell">1.2 MB</div><div class="cell">PDF</div><div class="cell">2025-05-09</div></div>
+                    <div class="file-row"><div class="file-cell"><i class="fa-solid fa-file"></i><span class="filename">report_asfkljaslfkja;slfdja;skldfj;klfjsd.pdf</span></div><div class="cell">1.2 MB</div><div class="cell">PDF</div><div class="cell">2025-05-09</div></div>
+                    <div class="file-row"><div class="file-cell"><i class="fa-solid fa-file"></i><span class="filename">report_asfkljaslfkja;slfdja;skldfj;klfjsd.pdf</span></div><div class="cell">1.2 MB</div><div class="cell">PDF</div><div class="cell">2025-05-09</div></div>
+                    <div class="file-row"><div class="file-cell"><i class="fa-solid fa-file"></i><span class="filename">report_asfkljaslfkja;slfdja;skldfj;klfjsd.pdf</span></div><div class="cell">1.2 MB</div><div class="cell">PDF</div><div class="cell">2025-05-09</div></div>
+                    <div class="file-row"><div class="file-cell"><i class="fa-solid fa-file"></i><span class="filename">report_asfkljaslfkja;slfdja;skldfj;klfjsd.pdf</span></div><div class="cell">1.2 MB</div><div class="cell">PDF</div><div class="cell">2025-05-09</div></div>
+                    <div class="file-row"><div class="file-cell"><i class="fa-solid fa-file"></i><span class="filename">report_asfkljaslfkja;slfdja;skldfj;klfjsd.pdf</span></div><div class="cell">1.2 MB</div><div class="cell">PDF</div><div class="cell">2025-05-09</div></div>
+                    <div class="file-row"><div class="file-cell"><i class="fa-solid fa-file"></i><span class="filename">report_asfkljaslfkja;slfdja;skldfj;klfjsd.pdf</span></div><div class="cell">1.2 MB</div><div class="cell">PDF</div><div class="cell">2025-05-09</div></div>
+                    <div class="file-row"><div class="file-cell"><i class="fa-solid fa-file"></i><span class="filename">report_asfkljaslfkja;slfdja;skldfj;klfjsd.pdf</span></div><div class="cell">1.2 MB</div><div class="cell">PDF</div><div class="cell">2025-05-09</div></div>
+                    <div class="file-row"><div class="file-cell"><i class="fa-solid fa-file"></i><span class="filename">report_asfkljaslfkja;slfdja;skldfj;klfjsd.pdf</span></div><div class="cell">1.2 MB</div><div class="cell">PDF</div><div class="cell">2025-05-09</div></div>
+                    <div class="file-row"><div class="file-cell"><i class="fa-solid fa-file"></i><span class="filename">report_asfkljaslfkja;slfdja;skldfj;klfjsd.pdf</span></div><div class="cell">1.2 MB</div><div class="cell">PDF</div><div class="cell">2025-05-09</div></div>
+                    <div class="file-row"><div class="file-cell"><i class="fa-solid fa-file"></i><span class="filename">report_asfkljaslfkja;slfdja;skldfj;klfjsd.pdf</span></div><div class="cell">12342422 MB</div><div class="cell">PDF</div><div class="cell">2025-05-09</div></div>
+                    <div class="file-row"><div class="file-cell"><i class="fa-solid fa-file"></i><span class="filename">report_asfkljaslfkja;slfdja;skldfj;klfjsd.pdf</span></div><div class="cell">1.2 MB</div><div class="cell">PDF</div><div class="cell">2025-05-09</div></div>
+                    <div class="file-row"><div class="file-cell"><i class="fa-solid fa-file"></i><span class="filename">report_asfkljaslfkja;slfdja;skldfj;klfjsd.pdf</span></div><div class="cell">1.2 MB</div><div class="cell">PDF</div><div class="cell">2025-05-09</div></div>
+                    <div class="file-row"><div class="file-cell"><i class="fa-solid fa-file"></i><span class="filename">report_asfkljaslfkja;slfdja;skldfj;klfjsd.pdf</span></div><div class="cell">1.2 MB</div><div class="cell">PDF</div><div class="cell">2025-05-09</div></div>
+                    <div class="file-row"><div class="file-cell"><i class="fa-solid fa-file"></i><span class="filename">report_asfkljaslfkja;slfdja;skldfj;klfjsd.pdf</span></div><div class="cell">1.2 MB</div><div class="cell">PDF</div><div class="cell">2025-05-09</div></div>
+                    <div class="file-row"><div class="file-cell"><i class="fa-solid fa-file"></i><span class="filename">report_asfkljaslfkja;slfdja;skldfj;klfjsd.pdf</span></div><div class="cell">1.2 MB</div><div class="cell">PDF</div><div class="cell">2025-05-09</div></div>
+                    <div class="file-row"><div class="file-cell"><i class="fa-solid fa-file"></i><span class="filename">report_asfkljaslfkja;slfdja;skldfj;klfjsd.pdf</span></div><div class="cell">1.2 MB</div><div class="cell">PDF</div><div class="cell">2025-05-09</div></div>
+                    <div class="file-row"><div class="file-cell"><i class="fa-solid fa-file"></i><span class="filename">report_asfkljaslfkja;slfdja;skldfj;klfjsd.pdf</span></div><div class="cell">1.2 MB</div><div class="cell">PDF</div><div class="cell">2025-05-09</div></div>
+                    <div class="file-row"><div class="file-cell"><i class="fa-solid fa-file"></i><span class="filename">report_asfkljaslfkja;slfdja;skldfj;klfjsd.pdf</span></div><div class="cell">1.2 MB</div><div class="cell">PDF</div><div class="cell">2025-05-09</div></div>
+                    <div class="file-row"><div class="file-cell"><i class="fa-solid fa-file"></i><span class="filename">report_asfkljaslfkja;slfdja;skldfj;klfjsd.pdf</span></div><div class="cell">1.2 MB</div><div class="cell">PDF</div><div class="cell">2025-05-09</div></div>
+                    <div class="file-row"><div class="file-cell"><i class="fa-solid fa-file"></i><span class="filename">report_asfkljaslfkja;slfdja;skldfj;klfjsd.pdf</span></div><div class="cell">1.2 MB</div><div class="cell">PDF</div><div class="cell">2025-05-09</div></div>
+                    <div class="file-row"><div class="file-cell"><i class="fa-solid fa-file"></i><span class="filename">report_asfkljaslfkja;slfdja;skldfj;klfjsd.pdf</span></div><div class="cell">1.2 MB</div><div class="cell">PDF</div><div class="cell">2025-05-09</div></div>
+                    <div class="file-row"><div class="file-cell"><i class="fa-solid fa-file"></i><span class="filename">report_asfkljaslfkja;slfdja;skldfj;klfjsd.pdf</span></div><div class="cell">1.2 MB</div><div class="cell">PDF</div><div class="cell">2025-05-09</div></div>
+                    <div class="file-row"><div class="file-cell"><i class="fa-solid fa-file"></i><span class="filename">report_asfkljaslfkja;slfdja;skldfj;klfjsd.pdf</span></div><div class="cell">1.2 MB</div><div class="cell">PDF</div><div class="cell">2025-05-09</div></div>
+                    <div class="file-row"><div class="file-cell"><i class="fa-solid fa-file"></i><span class="filename">report_asfkljaslfkja;slfdja;skldfj;klfjsd.pdf</span></div><div class="cell">1.2 MB</div><div class="cell">PDF</div><div class="cell">2025-05-09</div></div>
+                    <div class="file-row"><div class="file-cell"><i class="fa-solid fa-file"></i><span class="filename">report_asfkljaslfkja;slfdja;skldfj;klfjsd.pdf</span></div><div class="cell">1.2 MB</div><div class="cell">PDF</div><div class="cell">2025-05-09</div></div>
+                    <div class="file-row"><div class="file-cell"><i class="fa-solid fa-file"></i><span class="filename">report_asfkljaslfkja;slfdja;skldfj;klfjsd.pdf</span></div><div class="cell">1.2 MB</div><div class="cell">PDF</div><div class="cell">2025-05-09</div></div>
+                    <div class="file-row"><div class="file-cell"><i class="fa-solid fa-file"></i><span class="filename">report_asfkljaslfkja;slfdja;skldfj;klfjsd.pdf</span></div><div class="cell">1.2 MB</div><div class="cell">PDF</div><div class="cell">2025-05-09</div></div>
+                    <div class="file-row"><div class="file-cell"><i class="fa-solid fa-file"></i><span class="filename">report_asfkljaslfkja;slfdja;skldfj;klfjsd.pdf</span></div><div class="cell">1.2 MB</div><div class="cell">PDF</div><div class="cell">2025-05-09</div></div>
+                    <div class="file-row"><div class="file-cell"><i class="fa-solid fa-file"></i><span class="filename">report_asfkljaslfkja;slfdja;skldfj;klfjsd.pdf</span></div><div class="cell">1.2 MB</div><div class="cell">PDF</div><div class="cell">2025-05-09</div></div>
+                    <div class="file-row"><div class="file-cell"><i class="fa-solid fa-file"></i><span class="filename">report_asfkljaslfkja;slfdja;skldfj;klfjsd.pdf</span></div><div class="cell">1.2 MB</div><div class="cell">PDF</div><div class="cell">2025-05-09</div></div>
+                    <div class="file-row"><div class="file-cell"><i class="fa-solid fa-file"></i><span class="filename">report_asfkljaslfkja;slfdja;skldfj;klfjsd.pdf</span></div><div class="cell">1.2 MB</div><div class="cell">PDF</div><div class="cell">2025-05-09</div></div>
+                    <div class="file-row"><div class="file-cell"><i class="fa-solid fa-file"></i><span class="filename">report_asfkljaslfkja;slfdja;skldfj;klfjsd.pdf</span></div><div class="cell">1.2 MB</div><div class="cell">PDF</div><div class="cell">2025-05-09</div></div>
+                    <div class="file-row"><div class="file-cell"><i class="fa-solid fa-file"></i><span class="filename">report_asfkljaslfkja;slfdja;skldfj;klfjsd.pdf</span></div><div class="cell">1.2 MB</div><div class="cell">PDF</div><div class="cell">2025-05-09</div></div>
+                </div>
+
+            </div>
+        </div>
+    </body>
+        <script>
+            document.querySelector('.slider').value = 20;
+            document.querySelector('.slider').addEventListener('input', function() {
+                change_width(this.value);
+            });
+
+            function change_width(value){
+                document.querySelectorAll('.gallery .media').forEach(function(element) {
+                    element.style.width = value + '%';
+                });
+                document.querySelectorAll('.file-cell').forEach(function(element) {
+                    element.style.flex = value;
+                });
+            }
+
+            document.querySelector('.file').addEventListener('copy', function(event) {
+                const selectedText = window.getSelection().toString();
+                const modifiedText = selectedText.replace(/\u200B/g, ''); 
+
+                const clipboardData = event.clipboardData || window.clipboardData;
+                clipboardData.setData('text/plain', modifiedText);
+
+                event.preventDefault();
+            });
+        </script>
+
+</html>
+
+<!--
+
+const s = "ㅁㅁㅁㄹ아머닒ㄴㄹaaa";
+const result = s.replace(/(.{5})(?=.)/g, '$1\u200B');
+console.log(result);
+
+asfaslfjaaslfkjaslkfjasl;dfjakl;fj;alkfjasklfj.txt
+
+
+
+(global = typeof globalThis !== 'undefined' ? globalThis : global || self, factory(global.Zod = {}));
+
+
+-->
+

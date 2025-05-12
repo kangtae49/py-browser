@@ -1,10 +1,13 @@
-const WidgetId = Zod.enum([
+const z = Zod;
+
+const WidgetId = z.enum([
+    "PY_BROWSER",
     "WIDGET_FOLDER",
     "WIDGET_CONTENT",
     "WIDGET_CONSOLE",
 ]);
 
-const BaseMsg = Zod.object({
+const BaseMsg = z.object({
     sender_id: WidgetId,
     receiver_id: WidgetId,
     action: Zod.string(),
@@ -12,61 +15,56 @@ const BaseMsg = Zod.object({
 });
 
 const FolderReq = BaseMsg.extend({
-    path: Zod.string().nullable(),
+    path: z.string().nullable(),
+    is_root: z.boolean(),
 });
 
-const PathItem = Zod.object({
-    is_folder: Zod.boolean(),
-    name: Zod.string(),
-    path: Zod.string(),
+const OpenFileReq = BaseMsg.extend({
+    path: z.string(),
 });
 
-const FolderListRes = BaseMsg.extend({
-    path: Zod.string().nullable(),
-    items: Zod.array(PathItem),
+const PathItem = z.object({
+    is_folder: z.boolean(),
+    name: z.string(),
+    path: z.string(),
+    mtime: z.string(),
+    size: z.number().int(),
 });
 
-const ConsoleReq = BaseMsg.extend({
-    msg: Zod.string(),
+const FolderRes = BaseMsg.extend({
+    path: z.string().nullable(),
+    is_root: z.boolean(),
+    items: z.array(PathItem),
 });
+
+
 
 
 class PyBrowser {
     constructor() {
         this.MESSAGE_HANDLER_NAME = null;
         this.message_handler = null;
-        this.listener = null;
+        this._onLoad = null;
+        this.callbacks = {};
     }
 
-    addScriptMessageHandler(name) {
-        this.MESSAGE_HANDLER_NAME = name;
-        this.message_handler = window[name];
-        let pb = this;
-        window.console = {
-            log: function (msg) {
-                const req = ConsoleReq.parse({
-                    sender_id: pb.MESSAGE_HANDLER_NAME,
-                    receiver_id: "WIDGET_CONSOLE",
-                    action: "console_log",
-                    callback: "Pb.appendConsoleLog",
-                    msg: String(msg)
-                });
-                pb.sendMessage(req);
-            },
-        };
-        this.listener();
+    init = (jres) => {
+        const res = BaseMsg.parse(jres);
+        this.MESSAGE_HANDLER_NAME = res.receiver_id;
+        this.message_handler = window[this.MESSAGE_HANDLER_NAME];
+        this._onLoad();
     }
 
 
-    getMessageHandlerName(){
+    getMessageHandlerName = () => {
         return this.MESSAGE_HANDLER_NAME;
     }
 
-    onLoad(listener) {
-        this.listener = listener;
+    onLoad = (_onLoad) => {
+        this._onLoad = _onLoad;
     }
 
-    sendMessage (msg) {
+    sendMessage = (msg) => {
         if (this.MESSAGE_HANDLER_NAME) {
             this.message_handler.postMessage(JSON.stringify(msg));
         } else {
@@ -74,9 +72,22 @@ class PyBrowser {
         }
     }
 
-    appendConsoleLog(msg) {
-        let res = ConsoleReq.safeParse(JSON.parse(msg));
-        append_console_log(res.data);
+
+    listener = (params) => {
+        const jres = JSON.parse(params);
+        const res = BaseMsg.parse(jres);
+        if (res.callback){
+            const func = (res.callback).split('.').reduce((acc, key) => acc?.[key], window);
+            if (typeof func === "function"){
+                func(jres);
+            } else {
+                alert("Error callback: " + res.callback);
+            }
+        }
+    }
+
+    addCallbacks = (callbacks) => {
+        this.callbacks = callbacks;
     }
     
 
@@ -84,13 +95,19 @@ class PyBrowser {
 
 const pyBrowser = new PyBrowser();
 
-const Pb = {
-    addScriptMessageHandler: pyBrowser.addScriptMessageHandler,
-    sendMessage: pyBrowser.sendMessage,
-    onLoad: pyBrowser.onLoad,
-    getMessageHandlerName: pyBrowser.getMessageHandlerName,
-    appendConsoleLog: pyBrowser.appendConsoleLog,
+window.Pb = pyBrowser;
+window.onerror = (message, source, lineno, colno, error) => {
+    const err = {
+        message: message,
+        source: source,
+        lineno: lineno,
+        colno: colno,
+        error: error,
+    }
+    alert("onerror:" + JSON.stringify(err));
+    return true;
 };
 
-window.Pb = Pb;
-
+window.addEventListener("unhandledrejection", (event) => {
+  alert("Unhandled rejection:" + event.reason);
+});

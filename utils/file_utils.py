@@ -2,7 +2,7 @@ import sys
 from pathlib import Path
 from typing import Union
 
-def get_root_path() -> Path:
+def get_default_root_path() -> Path:
     root_path = Path(".")
     if getattr(sys, "frozen", False):
         root_path = Path(sys.executable).parent
@@ -14,12 +14,12 @@ def get_root_path() -> Path:
             root_path = arg_path
         elif arg_path.is_file():
             root_path = arg_path.parent
-    return root_path.resolve()
+    return root_path.absolute()
 
 def get_resource_path(path: Union[str | Path] | None = None) -> Path:
     resource_path = Path(getattr(sys, "_MEIPASS", ".")).joinpath("resources")
     if path is None:
-        return resource_path.resolve()
+        return resource_path.absolute()
     else:
-        return resource_path.joinpath(path).resolve()
+        return resource_path.joinpath(path).absolute()
     

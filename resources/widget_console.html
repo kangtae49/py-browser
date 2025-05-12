@@ -14,46 +14,15 @@
       #input { padding:0; margin: 0; width: 95%; }
     </style>
     <script>
-      Pb.onLoad(function() {
-        const input = document.getElementById("input");
-        const consoleOutput = document.getElementById("console-output");
-
-        input.addEventListener("keydown", function(event) {
-          if (event.key === "Enter") {
-            const command = input.value;
-            let output = eval(command);
-            console.log(String(output));
-          }
-        });
-        
+      Pb.onLoad(() => {
+        console.log("onLoad");
       });
-
-
-      function fillcmd(element) {
-        const command = element.innerText;
-        input.value = command;
-        input.focus();
-      }
-
-      function append_console_log(obj) {
-        const div = document.createElement("div");
-        div.textContent = obj.msg;
-        document.querySelector("#console-output").prepend(div);
-      }
-
-
 
     </script>
   </head>
 
   <body>
     <div class="container">
-        <div id="console">
-          <div id="console-input">
-            <input type="text" id="input" placeholder="Type here..."/>
-          </div>
-          <div id="console-output"></div>
-        </div>
     </div>
   </body>
 </html>

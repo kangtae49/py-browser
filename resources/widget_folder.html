@@ -8,49 +8,35 @@
     <link rel="stylesheet" href="fontawesome/css/all.min.css">
     <script src="zod-3.24.4.js"></script>
     <script src="py-browser.js"></script>
+    <script src="widget_folder.js"></script>
     <style>
       body { margin: 0; padding: 0; height: 100vh; display: flex;}
       .container { padding:0; margin:0; }
-      .tree { padding: 0 0 0 0px; margin: 0; font-size: 0.9em}
-      .tree ul { padding: 0 0 0 10px; margin: 0;}
-      .tree li { list-style: none; cursor: pointer; padding: 0; white-space: nowrap;}
+      .tree { padding: 0 0 0 0px; margin: 0; font-size: 0.8em}
+      .tree ul { padding: 0 0 0 8px; margin: 0;}
+      .tree li { list-style: none; padding: 0; margin:0; white-space: nowrap;}
+      .tree .item { padding: 0 3px 1px 3px; margin: 0; cursor: pointer; display: inline-block;}
+      .tree .selected {background-color: #bad0e4;}
+      .tree .item span { padding: 0; margin: 0}
       .fa-folder { color: #f4a261; margin-right: 5px;}
       .fa-folder-open { color: #f4a261; margin-right: 5px;}
       .fa-file { color: #2a9d8f; margin-right: 5px;}
-      .fa-file-code { color: #2a9d8f; margin-right: 5px;}  
+      .fa-file-code { color: #2a9d8f; margin-right: 5px;}
     </style>
     <script>
-        Pb.onLoad(function() {
-          call_list_directory();
+        Pb.onLoad(() => {
+          send_list_directory({path: null, is_root: true});
+        });
+        Pb.addCallbacks({
+          appendData: appendData
         });
 
 
-        function call_list_directory(path=null) {
-          Pb.sendMessage(FolderReq.parse({
-            sender_id : WidgetId.enum.WIDGET_FOLDER,
-            receiver_id : WidgetId.enum.WIDGET_FOLDER,
-            action: "list_directory",
-            callback: "appendData",
-            path: path,
-          }));
-        }
-
-        function call_open_file(path) {
-          Pb.sendMessage(FolderReq.parse({
-            sender_id : WidgetId.enum.WIDGET_FOLDER,
-            receiver_id : WidgetId.enum.WIDGET_FOLDER,
-            action: "open_file",
-            callback: null,
-            path: path,
-          }));
-        }
-
-        function appendData(param) {
-          const jres = JSON.parse(param);
-          const res = FolderListRes.parse(jres);
+        function appendData(jres) {
+          const res = FolderRes.parse(jres);
           let parent_node = document.querySelector("#file-tree");
 
-          if (res.path == null) {
+          if (res.is_root) {
             parent_node.innerHTML = "";
           } else {
             parent_node = document.querySelector("li[data-path='" + encodeURIComponent(res.path) + "']");
@@ -64,28 +50,76 @@
               li.dataset.is_folder = "true";
               li.dataset.expanded = "false";
               li.dataset.path = encodeURIComponent(item.path);
-              li.innerHTML = `<i class="fa-solid fa-folder"></i><span>${item.name}</span>`;
-              li.addEventListener("click", function(event) {
+              const div = document.createElement("div");
+              div.classList.add("item");
+              div.innerHTML = `<i class="fa-solid fa-folder"></i><span>${item.name}</span>`;
+              if (res.is_root) {
+                div.classList.add("selected");
+              }
+              // li.innerHTML = `<div class="item"><i class="fa-solid fa-folder"></i><span>${item.name}</span></div>`;
+              div.addEventListener("click", function(event) {
                 event.stopPropagation();
-                const isExpanded = li.dataset.expanded === "true";
+                document.querySelectorAll(".tree li div").forEach(el => {
+                  el.classList.remove("selected");
+                });
+                div.classList.add("selected")
+                isExpanded = li.dataset.expanded === "true";
                 li.dataset.expanded = !isExpanded;
                 if (isExpanded) {
-                  li.querySelector("ul").remove();
+                  li.querySelectorAll("ul").forEach(ul => ul.remove());
                 } else {
-                  call_list_directory(item.path);
+                  send_list_directory({path: item.path, is_root: false});
                 }
               });
+              li.appendChild(div);
             } else {
-              li.innerHTML = `<i class="fa-solid fa-file-code"></i><span>${item.name}</span>`;
-              li.addEventListener("click", function(event) {
+              li.dataset.path = encodeURIComponent(item.path);
+              const div = document.createElement("div");
+              div.classList.add("item");
+              div.innerHTML = `<div class="item"><i class="fa-solid fa-file-code"></i><span>${item.name}</span><div>`;
+              div.addEventListener("click", function(event) {
                 event.stopPropagation();
-                call_open_file(item.path);
+                document.querySelectorAll(".tree li div").forEach(el => {
+                  el.classList.remove("selected");
+                });
+                div.classList.add("selected")
+                send_open_file({path: item.path});
               });
+              li.appendChild(div);
+
             }
             ul.appendChild(li);
           }
         }
 
+
+        window.addEventListener("keydown", function(event) {
+          if (event.key === "Enter") {
+            event.preventDefault();
+            document.querySelector(".selected").click();
+          } else if(event.key === "ArrowDown") {
+            event.preventDefault();
+            const arr = Array.from(document.querySelectorAll("li>div"));
+            const idx = arr.indexOf(document.querySelector("li>div.selected"));
+            const next_idx = Math.min(idx+1, arr.length-1);
+            if(idx != next_idx){
+              arr[idx].classList.remove("selected");
+              arr[next_idx].classList.add("selected");
+              arr[next_idx].focus();
+              arr[next_idx].scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
+            }
+          } else if(event.key === "ArrowUp") {
+            event.preventDefault();
+            const arr = Array.from(document.querySelectorAll("li>div"));
+            const idx = arr.indexOf(document.querySelector("li>div.selected"));
+            const prev_idx = Math.max(idx-1, 0);
+            if(idx != prev_idx){
+              arr[idx].classList.remove("selected");
+              arr[prev_idx].classList.add("selected");
+              arr[prev_idx].scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
+            }
+          }
+        });
     </script>
   </head>
 
