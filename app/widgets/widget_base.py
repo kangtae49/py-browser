@@ -1,4 +1,4 @@
-
+from enum import Enum
 from abc import ABC, ABCMeta, abstractmethod
 import wx
 
@@ -11,5 +11,8 @@ class WidgetBase(ABC):
 
     @abstractmethod
     def get_original(self): ...
+
+    @abstractmethod
+    def load_template(self, template: Enum): ...
 
 class WidgetMeta(type(wx.Panel), ABCMeta): pass    

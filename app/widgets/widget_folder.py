@@ -12,7 +12,7 @@ from app.widgets.widget_base import WidgetBase, WidgetMeta
 class WidgetFolder(wx.Panel, WidgetBase, metaclass=WidgetMeta):
     def __init__(self, *args, **kwargs):
         from app.py_browser import PyBrowser
-        self._browser: WebView = kwargs.pop("browser", None)
+        self._browser: PyBrowser = kwargs.pop("browser", None)
         self._widget_id: WidgetId = kwargs.pop("widget_id", None)
         
         super().__init__(*args, **kwargs)
@@ -88,10 +88,11 @@ class WidgetFolder(wx.Panel, WidgetBase, metaclass=WidgetMeta):
                 ".exe", ".lnk", ".com",
             }
             if path.suffix.lower() not in exclude_suffix:
+                self._browser.SetTitle(f"PyBrowser - {path.absolute().as_posix()}")
                 self._browser.getWebview(WidgetId.WIDGET_CONTENT).LoadURL(path.as_uri())
         elif path.is_dir():
-            widgetContent: WidgetContent = self._browser.getWidget(WidgetId.WIDGET_CONTENT)
-            widgetContent.load_template(ContentTemplate.GALLERY)
+            self._browser.SetTitle(f"PyBrowser - {path.absolute().as_posix()}")
+            self._browser.getWidget(WidgetId.WIDGET_CONTENT).load_template(ContentTemplate.GALLERY)
 
 
 
