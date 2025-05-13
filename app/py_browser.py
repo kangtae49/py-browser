@@ -1,13 +1,12 @@
-from pathlib import Path
 import wx
 import wx.html2
 import wx.aui as aui
 
-from models.base import WidgetId, BaseMsg, FolderReq
-from handlers.widget_folder_handler import WidgetFolderHandler
-from handlers.widget_content_handler import WidgetContentHandler
-from handlers.widget_console_handler import WidgetConsoleHandler
-from handlers import api
+from app.models.base import WidgetId, BaseMsg
+from app.handlers.widget_folder_handler import WidgetFolderHandler
+from app.handlers.widget_content_handler import WidgetContentHandler
+from app.handlers.widget_console_handler import WidgetConsoleHandler
+from app.handlers import api
 
 class PyBrowser(wx.Frame):
     def __init__(self, parent, title):
@@ -37,7 +36,7 @@ class PyBrowser(wx.Frame):
         self.Bind(wx.EVT_MENU, self._on_toggle_console, self._menu_console)
         self.Bind(aui.EVT_AUI_PANE_CLOSE, self._on_close_console)
 
-
+        
         # -----------
         # Folder
         # -----------

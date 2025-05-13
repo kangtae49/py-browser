@@ -3,13 +3,16 @@ from pathlib import Path
 from datetime import datetime
 import wx
 from wx.html2 import WebView
-from utils.file_utils import get_default_root_path, get_resource_path
-from models.base import BaseMsg, FolderReq, OpenFileReq, FolderRes, PathItem
-from models.base import WidgetId
+from app.utils.file_utils import get_default_root_path, get_resource_path
+from app.models.base import BaseMsg, FolderReq, OpenPathReq, FolderRes, PathItem
+from app.models.base import WidgetId, ContentTemplate
+from app.handlers.widget_content_handler import WidgetContentHandler
 
 class WidgetFolderHandler:
     def __init__(self, browser, webview: WebView, widget_id: WidgetId):
-        self._browser = browser
+        from app.py_browser import PyBrowser
+
+        self._browser: PyBrowser = browser
         self._webview: WebView = webview
         self._widget_id: WidgetId = widget_id
         self.log = self._browser.log
@@ -46,8 +49,8 @@ class WidgetFolderHandler:
     def set_root_path(self, path):
         self._root_path = path
 
-    def api_open_file(self, param: str):
-        req = OpenFileReq.model_validate_json(param)
+    def api_open_path(self, param: str):
+        req = OpenPathReq.model_validate_json(param)
         path = Path(req.path)
         # self.log(f"{path}: {path.suffix}")
         # openable_suffix = {
@@ -66,11 +69,16 @@ class WidgetFolderHandler:
         # if path.suffix.lower() in openable_suffix:
         # wx.LaunchDefaultApplication(str(path.absolute()))
         # wx.LaunchDefaultBrowser(str(path.absolute()))
-        exclude_suffix = {
-            ".exe", ".lnk", ".com",
-        }
-        if path.suffix.lower() not in exclude_suffix:
-            self._browser._webview_content.LoadURL(path.as_uri())
+        if path.is_file():
+            exclude_suffix = {
+                ".exe", ".lnk", ".com",
+            }
+            if path.suffix.lower() not in exclude_suffix:
+                self._browser._webview_content.LoadURL(path.as_uri())
+        elif path.is_dir():
+            widgetContentHandler: WidgetContentHandler = self._browser.getHandler(WidgetId.WIDGET_CONTENT)
+            widgetContentHandler.load_content_template(ContentTemplate.GALLERY)
+
 
 
     def api_list_directory(self, param: str):
@@ -94,6 +102,7 @@ class WidgetFolderHandler:
                         is_folder=True,
                         name=root_path.name or root_path.absolute().as_posix(),
                         path=root_path.absolute().as_posix(),
+                        has_children=True,
                         size=root_path.stat().st_size,
                         mtime=datetime.fromtimestamp(root_path.stat().st_mtime).strftime("%Y-%m-%d %H:%M:%S"),
                     )
@@ -108,13 +117,20 @@ class WidgetFolderHandler:
                 #     continue
                 # if item.is_symlink():
                 #     continue
+                
                 if not os.access(item.absolute(), os.R_OK):
                     continue
                 if item.is_dir():
+                    has_children = False
+                    try:
+                        has_children = any(item.iterdir())
+                    except:
+                        continue
                     items.append(PathItem(
                         is_folder=True,
                         name=item.name,
                         path=item.absolute().as_posix(),
+                        has_children=has_children,
                         size=item.stat().st_size,
                         mtime=datetime.fromtimestamp(item.stat().st_mtime).strftime("%Y-%m-%d %H:%M:%S"),
                     ))
@@ -123,6 +139,7 @@ class WidgetFolderHandler:
                         is_folder=False,
                         name=item.name,
                         path=item.absolute().as_posix(),
+                        has_children=False,
                         size=item.stat().st_size,
                         mtime=datetime.fromtimestamp(item.stat().st_mtime).strftime("%Y-%m-%d %H:%M:%S"),
                     ))
@@ -136,4 +153,5 @@ class WidgetFolderHandler:
                 items=items
             )
         self._browser.runScriptAsync(res)
+
         

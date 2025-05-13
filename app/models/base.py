@@ -23,13 +23,14 @@ class FolderReq(BaseMsg):
     path: str | None = None
     is_root: bool
 
-class OpenFileReq(BaseMsg):
+class OpenPathReq(BaseMsg):
     path: str
 
 class PathItem(BaseModel):
     is_folder: bool
     name: str
     path: str
+    has_children: bool = False
     mtime: str
     size: int
 

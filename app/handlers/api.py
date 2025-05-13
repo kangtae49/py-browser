@@ -1,4 +1,4 @@
-from models.base import WidgetId, FolderReq
+from app.models.base import WidgetId, FolderReq
 
 def createFolderReq (
         sender=WidgetId.PY_BROWSER,

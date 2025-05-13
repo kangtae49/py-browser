@@ -19,7 +19,7 @@ const FolderReq = BaseMsg.extend({
     is_root: z.boolean(),
 });
 
-const OpenFileReq = BaseMsg.extend({
+const OpenPathReq = BaseMsg.extend({
     path: z.string(),
 });
 
@@ -27,6 +27,7 @@ const PathItem = z.object({
     is_folder: z.boolean(),
     name: z.string(),
     path: z.string(),
+    has_children: z.boolean().default(false),
     mtime: z.string(),
     size: z.number().int(),
 });

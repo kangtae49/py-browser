@@ -17,8 +17,8 @@
       .tree li { list-style: none; padding: 0; margin:0; white-space: nowrap;}
       .tree .item { padding: 0 3px 1px 3px; margin: 0; cursor: pointer; display: inline-block;}
       .tree .selected {background-color: #bad0e4;}
-      .tree .item span { padding: 0; margin: 0}
-      .fa-folder { color: #f4a261; margin-right: 5px;}
+      .tree .item .subitem { padding: 0; margin: 0; display: inline-block;}
+      .fa-folder, .fa-folder-plus { color: #f4a261; margin-right: 5px;}
       .fa-folder-open { color: #f4a261; margin-right: 5px;}
       .fa-file { color: #2a9d8f; margin-right: 5px;}
       .fa-file-code { color: #2a9d8f; margin-right: 5px;}
@@ -49,76 +49,140 @@
             if (item.is_folder) {
               li.dataset.is_folder = "true";
               li.dataset.expanded = "false";
+              li.dataset.has_children = item.has_children;
               li.dataset.path = encodeURIComponent(item.path);
-              const div = document.createElement("div");
-              div.classList.add("item");
-              div.innerHTML = `<i class="fa-solid fa-folder"></i><span>${item.name}</span>`;
-              if (res.is_root) {
-                div.classList.add("selected");
+              const div_item = document.createElement("div");
+              div_item.classList.add("item");
+              
+              const div_path_icon = document.createElement("div");
+              div_path_icon.classList.add("subitem", "path-icon");
+              if(item.has_children){
+                div_path_icon.innerHTML = `<i class="fa-solid fa-folder-plus"></i>`
+              } else {
+                div_path_icon.innerHTML = `<i class="fa-solid fa-folder"></i>`
               }
-              // li.innerHTML = `<div class="item"><i class="fa-solid fa-folder"></i><span>${item.name}</span></div>`;
-              div.addEventListener("click", function(event) {
-                event.stopPropagation();
-                document.querySelectorAll(".tree li div").forEach(el => {
-                  el.classList.remove("selected");
-                });
-                div.classList.add("selected")
-                isExpanded = li.dataset.expanded === "true";
-                li.dataset.expanded = !isExpanded;
-                if (isExpanded) {
-                  li.querySelectorAll("ul").forEach(ul => ul.remove());
-                } else {
-                  send_list_directory({path: item.path, is_root: false});
-                }
-              });
-              li.appendChild(div);
+              
+              const div_path_name = document.createElement("div");
+              div_path_name.classList.add("subitem", "path-name");
+              div_path_name.innerHTML = item.name 
+              
+              if (res.is_root) {
+                div_item.classList.add("selected");
+              }
+              div_path_icon.addEventListener("click", toggle_folder);
+              div_path_name.addEventListener("click", open_path);
+              div_item.appendChild(div_path_icon);
+              div_item.appendChild(div_path_name);
+              li.appendChild(div_item);
+              
             } else {
               li.dataset.path = encodeURIComponent(item.path);
-              const div = document.createElement("div");
-              div.classList.add("item");
-              div.innerHTML = `<div class="item"><i class="fa-solid fa-file-code"></i><span>${item.name}</span><div>`;
-              div.addEventListener("click", function(event) {
-                event.stopPropagation();
-                document.querySelectorAll(".tree li div").forEach(el => {
-                  el.classList.remove("selected");
-                });
-                div.classList.add("selected")
-                send_open_file({path: item.path});
-              });
-              li.appendChild(div);
+              const div_item = document.createElement("div");
+              div_item.classList.add("item");
+              
+              const div_path_icon = document.createElement("div");
+              div_path_icon.classList.add("subitem", "path-icon");
+              div_path_icon.innerHTML = `<i class="fa-solid fa-file-code"></i>`
+              
+              const div_path_name = document.createElement("div");
+              div_path_name.classList.add("subitem", "path-name");
+              div_path_name.innerHTML = item.name 
 
+              div_path_name.addEventListener("click", open_path);
+              div_item.appendChild(div_path_icon);
+              div_item.appendChild(div_path_name);
+              li.appendChild(div_item);
             }
             ul.appendChild(li);
           }
         }
 
+        const toggle_folder = (event) => {
+          event.stopPropagation();
+          const li = event.currentTarget.parentElement.parentElement;
+          const div_item = event.currentTarget.parentElement;
+          const path = decodeURIComponent(li.dataset.path);
+
+          document.querySelectorAll(".tree li>div").forEach(el => {
+            el.classList.remove("selected");
+          });
+          div_item.classList.add("selected")
+          isExpanded = li.dataset.expanded === "true";
+          li.dataset.expanded = !isExpanded;
+          if (isExpanded) {
+            li.querySelectorAll("ul").forEach(ul => ul.remove());
+          } else {
+            send_list_directory({path: path, is_root: false});
+          }
+        }
+
+        const open_path = (event) => {
+          event.stopPropagation();
+          const li = event.currentTarget.parentElement.parentElement;
+          const div_item = event.currentTarget.parentElement;
+          const path = decodeURIComponent(li.dataset.path);
+
+          document.querySelectorAll(".tree li div").forEach(el => {
+            el.classList.remove("selected");
+          });
+          div_item.classList.add("selected")
+          send_open_path({path: path});
+        }
 
         window.addEventListener("keydown", function(event) {
+          const keys = ["Enter", "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", " "]
+          if(keys.includes(event.key)){
+            event.stopPropagation();
+            event.preventDefault();
+          } else {
+            return;
+          }
+          const div_item = document.querySelector(".selected");
+          const div_path_icon = div_item.querySelector(".path-icon");
+          const div_path_name = div_item.querySelector(".path-name");
+          const li = div_item.parentElement;
+          
+
           if (event.key === "Enter") {
-            event.preventDefault();
-            document.querySelector(".selected").click();
+            if (li.dataset.is_folder){
+              div_path_icon.click();
+            } else {
+              div_path_name.click();
+            }
+          } else if(event.key === "ArrowUp") {
+            const arr = Array.from(document.querySelectorAll("div.item"));
+            const idx = arr.indexOf(div_item);
+            const prev_idx = Math.max(idx-1, 0);
+            if(idx != prev_idx){
+              arr[idx].classList.remove("selected");
+              arr[prev_idx].classList.add("selected");
+            }
           } else if(event.key === "ArrowDown") {
-            event.preventDefault();
-            const arr = Array.from(document.querySelectorAll("li>div"));
-            const idx = arr.indexOf(document.querySelector("li>div.selected"));
+            const arr = Array.from(document.querySelectorAll("div.item"));
+            const idx = arr.indexOf(div_item);
             const next_idx = Math.min(idx+1, arr.length-1);
             if(idx != next_idx){
               arr[idx].classList.remove("selected");
               arr[next_idx].classList.add("selected");
               arr[next_idx].focus();
-              arr[next_idx].scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
             }
-          } else if(event.key === "ArrowUp") {
-            event.preventDefault();
-            const arr = Array.from(document.querySelectorAll("li>div"));
-            const idx = arr.indexOf(document.querySelector("li>div.selected"));
-            const prev_idx = Math.max(idx-1, 0);
-            if(idx != prev_idx){
-              arr[idx].classList.remove("selected");
-              arr[prev_idx].classList.add("selected");
-              arr[prev_idx].scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
+          } else if(event.key === "ArrowLeft") {
+            const parent_li = li.parentElement.parentElement;
+            const parent_path_icon = parent_li.querySelector(".path-icon");
+            if(parent_path_icon){
+              parent_path_icon.click();
             }
+          } else if(event.key === "ArrowRight") {
+            if (li.dataset.is_folder){
+              div_path_icon.click();
+            } else {
+              div_path_name.click();
+            }
+          } else if(event.key === " "){
+            div_path_name.click();
           }
+
+          document.querySelector(".selected").scrollIntoView({ behavior: 'auto', block: 'nearest', inline: 'end' });
         });
     </script>
   </head>
@@ -126,24 +190,6 @@
   <body>
   <div class="container">
     <div id="file-tree" class="tree">
-      <!--
-      <ul class="tree">
-        <li class="folder">
-          <i class="fa-solid fa-folder"></i><span>Folder 1</span>
-          <ul>
-            <li>
-              <i class="fa-solid fa-folder"></i><span>Folder 2</span>
-              <ul>
-                <li><i class="fa-solid fa-file-code"></i><span>File 1</span></li>
-                <li><i class="fa-solid fa-file-code"></i><span>File 2</span></li>
-              </ul>
-            </li>
-            <li><i class="fa-solid fa-file-code"></i><span>File 1</span></li>
-            <li><i class="fa-solid fa-file-code"></i><span>File 2</span></li>
-          </ul>
-        </li>
-      </ul>
-      -->
     </div>
   </div>
   </body>

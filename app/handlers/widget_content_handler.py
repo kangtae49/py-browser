@@ -1,14 +1,15 @@
 import wx
 from wx.html2 import WebView
-from utils.file_utils import get_resource_path
-from models.base import WidgetId, BaseMsg
+from app.utils.file_utils import get_resource_path
+from app.models.base import BaseMsg, ContentTemplate
 
 
-class WidgetConsoleHandler:
-    def __init__(self, browser, webview: WebView, widget_id: WidgetId):
+class WidgetContentHandler:
+    def __init__(self, browser, webview, widget_id):
         self._browser = browser
         self._webview: WebView = webview
-        self._widget_id: WidgetId = widget_id
+        self._widget_id = widget_id
+        self._template = ContentTemplate.CONTENT
         self.log = self._browser.log
 
         self._webview.EnableAccessToDevTools(True)
@@ -35,4 +36,16 @@ class WidgetConsoleHandler:
         if action:
             action(param)
     
+    def load_content_template(self, template: ContentTemplate=None):
+        if template:
+            self._template = template
 
+        if self._template == ContentTemplate.GALLERY:
+            self._webview.LoadURL(get_resource_path(f"widget_content_gallery.html").as_uri())
+        else:
+            self._webview.LoadURL(get_resource_path(f"widget_content.html").as_uri())
+
+
+
+
+    

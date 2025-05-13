@@ -8,10 +8,10 @@ send_list_directory = ({
 } = {}) => { 
     Pb.sendMessage(FolderReq.parse({ sender_id, receiver_id, action, callback, path, is_root,}));}
 
-send_open_file = ({
+send_open_path = ({
     sender_id=WidgetId.enum.WIDGET_FOLDER,
     receiver_id=WidgetId.enum.WIDGET_FOLDER,
-    action="api_open_file",
+    action="api_open_path",
     callback=null,
     path=null,
-} = {}) => { Pb.sendMessage(OpenFileReq.parse({sender_id, receiver_id,action, callback, path, }));}
+} = {}) => { Pb.sendMessage(OpenPathReq.parse({sender_id, receiver_id,action, callback, path, }));}
