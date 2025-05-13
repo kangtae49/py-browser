@@ -5,10 +5,11 @@ import wx
 from wx.html2 import WebView
 from app.utils.file_utils import get_default_root_path, get_resource_path
 from app.models.base import BaseMsg, FolderReq, OpenPathReq, FolderRes, PathItem
-from app.models.base import WidgetId, ContentTemplate
-from app.handlers.widget_content import WidgetContent
+from app.models.base import WidgetId, ContentTemplate, FolderTemplate
+from app.widgets.widget_content import WidgetContent
+from app.widgets.widget_base import WidgetBase, WidgetMeta
 
-class WidgetFolder(wx.Panel):
+class WidgetFolder(wx.Panel, WidgetBase, metaclass=WidgetMeta):
     def __init__(self, *args, **kwargs):
         from app.py_browser import PyBrowser
         self._browser: WebView = kwargs.pop("browser", None)
@@ -31,7 +32,10 @@ class WidgetFolder(wx.Panel):
         sizer = wx.BoxSizer(wx.VERTICAL)
         sizer.Add(self._webview, 1, wx.EXPAND)
         self.SetSizer(sizer)
-
+    
+    def get_original(self):
+        return self
+    
     def _on_load(self, event):
         self._browser.runScriptAsync(BaseMsg(
             sender_id=self._widget_id,
@@ -47,6 +51,11 @@ class WidgetFolder(wx.Panel):
         action = getattr(self, base.action, None)
         if action:
             action(param)
+
+    def load_template(self, template: FolderTemplate):        
+        if template:
+            self._template = template
+        self._webview.LoadURL(get_resource_path(template.value).as_uri())
 
     def get_root_path(self):
         return self._root_path
@@ -82,7 +91,7 @@ class WidgetFolder(wx.Panel):
                 self._browser.getWebview(WidgetId.WIDGET_CONTENT).LoadURL(path.as_uri())
         elif path.is_dir():
             widgetContent: WidgetContent = self._browser.getWidget(WidgetId.WIDGET_CONTENT)
-            widgetContent.load_content_template(ContentTemplate.GALLERY)
+            widgetContent.load_template(ContentTemplate.GALLERY)
 
 
 
@@ -159,5 +168,7 @@ class WidgetFolder(wx.Panel):
                 items=items
             )
         self._browser.runScriptAsync(res)
+
+
 
         

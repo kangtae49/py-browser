@@ -1,11 +1,12 @@
 import wx
 import wx.aui as aui
+from wx.html2 import WebView 
 
 from app.models.base import WidgetId, BaseMsg
-from app.handlers.widget_folder import WidgetFolder
-from app.handlers.widget_content import WidgetContent
-# from app.handlers.widget_console import WidgetConsole
-from app.handlers import api
+from app.widgets.widget_folder import WidgetFolder
+from app.widgets.widget_content import WidgetContent
+from app.widgets.widget_base import WidgetBase
+from app.widgets import api
 
 class PyBrowser(wx.Frame):
     def __init__(self, parent, title):
@@ -13,8 +14,7 @@ class PyBrowser(wx.Frame):
         self._mgr = aui.AuiManager()
         self._mgr.SetManagedWindow(self)
         self._webviews = {}
-        self._handlers = {}
-        self._console_handler = None
+        self._widgets = {}
 
         # -----------
         # Menu
@@ -87,9 +87,9 @@ class PyBrowser(wx.Frame):
         self.getWidget(base.receiver_id)._on_message_received(event)
 
 
-    def _register_widget(self, widget_id: WidgetId, webview, handler):
+    def _register_widget(self, widget_id: WidgetId, webview: WebView, widget: WidgetBase):
         self._webviews.update({widget_id: webview})
-        self._handlers.update({widget_id: handler})
+        self._widgets.update({widget_id: widget})
 
     def _on_toggle_console(self, event):
         pane = self._mgr.GetPane(WidgetId.WIDGET_CONSOLE.name)
@@ -110,11 +110,11 @@ class PyBrowser(wx.Frame):
                 selected_path = dlg.GetPath()
                 self.runApi(api.createFolderReq(path=selected_path, is_root=True))
 
-    def getWebview(self, widget_id: WidgetId):
+    def getWebview(self, widget_id: WidgetId) -> WebView:
         return self._webviews.get(widget_id)
 
-    def getWidget(self, widget_id: WidgetId):
-        return self._handlers.get(widget_id)
+    def getWidget(self, widget_id: WidgetId) -> WidgetBase:
+        return self._widgets.get(widget_id)
 
 
     def runApi(self, req: BaseMsg):

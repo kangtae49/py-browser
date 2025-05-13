@@ -3,8 +3,12 @@ from typing import List
 from enum import Enum
 
 class ContentTemplate(Enum):
-    CONTENT = "CONTENT"
-    GALLERY = "GALLERY"
+    CONTENT = "widget_content.html"
+    GALLERY = "widget_content_gallery.html"
+
+class FolderTemplate(Enum):
+    FOLDER = "widget_folder.html"
+
 
 class WidgetId(Enum):
     PY_BROWSER = "PY_BROWSER"

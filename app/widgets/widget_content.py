@@ -2,9 +2,9 @@ import wx
 from wx.html2 import WebView
 from app.utils.file_utils import get_resource_path
 from app.models.base import WidgetId, BaseMsg, ContentTemplate
+from app.widgets.widget_base import WidgetBase, WidgetMeta
 
-
-class WidgetContent(wx.Panel):
+class WidgetContent(wx.Panel, WidgetBase, metaclass=WidgetMeta):
     def __init__(self, *args, **kwargs):
         self._browser: WebView = kwargs.pop("browser", None)
         self._widget_id: WidgetId = kwargs.pop("widget_id", None)
@@ -25,7 +25,10 @@ class WidgetContent(wx.Panel):
         sizer = wx.BoxSizer(wx.VERTICAL)
         sizer.Add(self._webview, 1, wx.EXPAND)
         self.SetSizer(sizer)
-
+    
+    def get_original(self):
+        return self
+    
     def _on_load(self, event):
         self._browser.runScriptAsync(BaseMsg(
             sender_id=self._widget_id,
@@ -42,14 +45,11 @@ class WidgetContent(wx.Panel):
         if action:
             action(param)
     
-    def load_content_template(self, template: ContentTemplate=None):
+    def load_template(self, template: ContentTemplate=None):
         if template:
             self._template = template
+        self._webview.LoadURL(get_resource_path(template.value).as_uri())
 
-        if self._template == ContentTemplate.GALLERY:
-            self._webview.LoadURL(get_resource_path(f"widget_content_gallery.html").as_uri())
-        else:
-            self._webview.LoadURL(get_resource_path(f"widget_content.html").as_uri())
 
 
 
