@@ -1,4 +1,5 @@
 import sys
+import ctypes
 from pathlib import Path
 from typing import Union
 
@@ -23,3 +24,11 @@ def get_resource_path(path: Union[str | Path] | None = None) -> Path:
     else:
         return resource_path.joinpath(path).absolute()
     
+def is_hidden(path: Path) -> bool:
+    try:
+        attrs = ctypes.windll.kernel32.GetFileAttributesW(str(path))
+        if attrs == -1:
+            return 
+        return bool(attrs & 2)
+    except Exception:
+        return False

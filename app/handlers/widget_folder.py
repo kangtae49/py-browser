@@ -6,16 +6,17 @@ from wx.html2 import WebView
 from app.utils.file_utils import get_default_root_path, get_resource_path
 from app.models.base import BaseMsg, FolderReq, OpenPathReq, FolderRes, PathItem
 from app.models.base import WidgetId, ContentTemplate
-from app.handlers.widget_content_handler import WidgetContentHandler
+from app.handlers.widget_content import WidgetContent
 
-class WidgetFolderHandler:
-    def __init__(self, browser, webview: WebView, widget_id: WidgetId):
+class WidgetFolder(wx.Panel):
+    def __init__(self, *args, **kwargs):
         from app.py_browser import PyBrowser
+        self._browser: WebView = kwargs.pop("browser", None)
+        self._widget_id: WidgetId = kwargs.pop("widget_id", None)
+        
+        super().__init__(*args, **kwargs)
 
-        self._browser: PyBrowser = browser
-        self._webview: WebView = webview
-        self._widget_id: WidgetId = widget_id
-        self.log = self._browser.log
+        self._webview: WebView = WebView.New(self)
         self._root_path: Path = get_default_root_path()
 
         self._webview.EnableAccessToDevTools(True)
@@ -26,6 +27,10 @@ class WidgetFolderHandler:
         self._browser.Bind(wx.html2.EVT_WEBVIEW_LOADED, self._on_load, self._webview)
         self._browser.Bind(wx.html2.EVT_WEBVIEW_SCRIPT_MESSAGE_RECEIVED, self._browser._on_message_received, self._webview)
         self._webview.LoadURL(get_resource_path(f"{self._widget_id.name.lower()}.html").as_uri())
+
+        sizer = wx.BoxSizer(wx.VERTICAL)
+        sizer.Add(self._webview, 1, wx.EXPAND)
+        self.SetSizer(sizer)
 
     def _on_load(self, event):
         self._browser.runScriptAsync(BaseMsg(
@@ -74,10 +79,10 @@ class WidgetFolderHandler:
                 ".exe", ".lnk", ".com",
             }
             if path.suffix.lower() not in exclude_suffix:
-                self._browser._webview_content.LoadURL(path.as_uri())
+                self._browser.getWebview(WidgetId.WIDGET_CONTENT).LoadURL(path.as_uri())
         elif path.is_dir():
-            widgetContentHandler: WidgetContentHandler = self._browser.getHandler(WidgetId.WIDGET_CONTENT)
-            widgetContentHandler.load_content_template(ContentTemplate.GALLERY)
+            widgetContent: WidgetContent = self._browser.getWidget(WidgetId.WIDGET_CONTENT)
+            widgetContent.load_content_template(ContentTemplate.GALLERY)
 
 
 
@@ -117,7 +122,8 @@ class WidgetFolderHandler:
                 #     continue
                 # if item.is_symlink():
                 #     continue
-                
+                # if is_hidden(item):
+                #     continue
                 if not os.access(item.absolute(), os.R_OK):
                     continue
                 if item.is_dir():

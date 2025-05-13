@@ -1,11 +1,10 @@
 import wx
-import wx.html2
 import wx.aui as aui
 
 from app.models.base import WidgetId, BaseMsg
-from app.handlers.widget_folder_handler import WidgetFolderHandler
-from app.handlers.widget_content_handler import WidgetContentHandler
-from app.handlers.widget_console_handler import WidgetConsoleHandler
+from app.handlers.widget_folder import WidgetFolder
+from app.handlers.widget_content import WidgetContent
+# from app.handlers.widget_console import WidgetConsole
 from app.handlers import api
 
 class PyBrowser(wx.Frame):
@@ -29,20 +28,18 @@ class PyBrowser(wx.Frame):
         self.Bind(wx.EVT_MENU, self._on_open_folder, self._menu_open_folder)
 
         # Console
-        menu_consoler = wx.Menu()
-        self._menu_console = menu_consoler.Append(wx.ID_ANY, "Console", kind=wx.ITEM_CHECK)
-        menubar.Append(menu_consoler, "View")
-        self.SetMenuBar(menubar)
-        self.Bind(wx.EVT_MENU, self._on_toggle_console, self._menu_console)
-        self.Bind(aui.EVT_AUI_PANE_CLOSE, self._on_close_console)
+        # menu_consoler = wx.Menu()
+        # self._menu_console = menu_consoler.Append(wx.ID_ANY, "Console", kind=wx.ITEM_CHECK)
+        # menubar.Append(menu_consoler, "View")
+        # self.SetMenuBar(menubar)
+        # self.Bind(wx.EVT_MENU, self._on_toggle_console, self._menu_console)
+        # self.Bind(aui.EVT_AUI_PANE_CLOSE, self._on_close_console)
 
         
         # -----------
         # Folder
         # -----------
-        self._webview_folder = wx.html2.WebView.New(self)
-        
-        WidgetFolderHandler(self, self._webview_folder, WidgetId.WIDGET_FOLDER)
+        self._webview_folder = WidgetFolder(self, browser=self, widget_id=WidgetId.WIDGET_FOLDER)
         self._mgr.AddPane(self._webview_folder, 
                           aui.AuiPaneInfo()
                             .Name(WidgetId.WIDGET_FOLDER.name)
@@ -55,8 +52,8 @@ class PyBrowser(wx.Frame):
         # -----------
         # Content
         # -----------
-        self._webview_content = wx.html2.WebView.New(self)
-        WidgetContentHandler(self, self._webview_content, WidgetId.WIDGET_CONTENT)
+        self._webview_content = WidgetContent(self, browser=self, widget_id=WidgetId.WIDGET_CONTENT)
+
         self._mgr.AddPane(self._webview_content, 
                           aui.AuiPaneInfo()
                             .Name(WidgetId.WIDGET_CONTENT.name)
@@ -70,24 +67,24 @@ class PyBrowser(wx.Frame):
         # -----------
         # Debug Console
         # -----------
-        self._webview_console = wx.html2.WebView.New(self)
-        self._console_handler = WidgetConsoleHandler(self, self._webview_console, WidgetId.WIDGET_CONSOLE)
-        self._mgr.AddPane(self._webview_console, 
-                          aui.AuiPaneInfo()
-                            .Name(WidgetId.WIDGET_CONSOLE.name)
-                            .Caption("Console")
-                            .Bottom()
-                            .BestSize((-1, 100))
-                            .CloseButton(True)
-                            .CaptionVisible(True)
-                            .Hide()
-        )
+        # self._webview_console = WidgetConsole(self, browser=self, widget_id=WidgetId.WIDGET_CONSOLE)
+        # self._mgr.AddPane(self._webview_console, 
+        #                   aui.AuiPaneInfo()
+        #                     .Name(WidgetId.WIDGET_CONSOLE.name)
+        #                     .Caption("Console")
+        #                     .Bottom()
+        #                     .BestSize((-1, 100))
+        #                     .CloseButton(True)
+        #                     .CaptionVisible(True)
+        #                     .Hide()
+        # )
+
         self._mgr.Update()
 
     def _on_message_received(self, event):
         param = event.GetString()
         base = BaseMsg.model_validate_json(param)
-        self.getHandler(base.receiver_id)._on_message_received(event)
+        self.getWidget(base.receiver_id)._on_message_received(event)
 
 
     def _register_widget(self, widget_id: WidgetId, webview, handler):
@@ -116,20 +113,17 @@ class PyBrowser(wx.Frame):
     def getWebview(self, widget_id: WidgetId):
         return self._webviews.get(widget_id)
 
-    def getHandler(self, widget_id: WidgetId):
+    def getWidget(self, widget_id: WidgetId):
         return self._handlers.get(widget_id)
 
 
     def runApi(self, req: BaseMsg):
-        getattr(self.getHandler(req.receiver_id), req.action)(req.model_dump_json())
+        getattr(self.getWidget(req.receiver_id), req.action)(req.model_dump_json())
 
     def runScriptAsync(self, res: BaseMsg):
         script = f"Pb.listener({repr(res.model_dump_json())})"
         self.getWebview(res.receiver_id).RunScriptAsync(script)
         
-    def log(self, msg: str):
-        self._console_handler._console_log(msg)
-
     def on_close(self, event):
         self._mgr.UnInit()
         self.Destroy()

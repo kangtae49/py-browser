@@ -1,16 +1,18 @@
 import wx
 from wx.html2 import WebView
 from app.utils.file_utils import get_resource_path
-from app.models.base import BaseMsg, ContentTemplate
+from app.models.base import WidgetId, BaseMsg, ContentTemplate
 
 
-class WidgetContentHandler:
-    def __init__(self, browser, webview, widget_id):
-        self._browser = browser
-        self._webview: WebView = webview
-        self._widget_id = widget_id
+class WidgetContent(wx.Panel):
+    def __init__(self, *args, **kwargs):
+        self._browser: WebView = kwargs.pop("browser", None)
+        self._widget_id: WidgetId = kwargs.pop("widget_id", None)
+
+        super().__init__(*args, **kwargs)
+        self._webview = WebView.New(self)
+
         self._template = ContentTemplate.CONTENT
-        self.log = self._browser.log
 
         self._webview.EnableAccessToDevTools(True)
         self._webview.MSWSetModernEmulationLevel(True)
@@ -19,6 +21,10 @@ class WidgetContentHandler:
         self._browser.Bind(wx.html2.EVT_WEBVIEW_LOADED, self._on_load, self._webview)
         self._browser.Bind(wx.html2.EVT_WEBVIEW_SCRIPT_MESSAGE_RECEIVED, self._browser._on_message_received, self._webview)
         self._webview.LoadURL(get_resource_path(f"{self._widget_id.name.lower()}.html").as_uri())
+
+        sizer = wx.BoxSizer(wx.VERTICAL)
+        sizer.Add(self._webview, 1, wx.EXPAND)
+        self.SetSizer(sizer)
 
     def _on_load(self, event):
         self._browser.runScriptAsync(BaseMsg(
