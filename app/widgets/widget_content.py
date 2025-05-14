@@ -2,7 +2,7 @@ import wx
 from wx.html2 import WebView
 from app.utils.file_utils import get_resource_path
 from app.models import WidgetId, BaseMsg
-from app.enums import ActionId
+from app.enums import ActionId, ContentTemplate
 from app.widgets.widget_base import WidgetBase, WidgetMeta
 
 
@@ -21,7 +21,8 @@ class WidgetContent(wx.Panel, WidgetBase, metaclass=WidgetMeta):
         self._browser._register_widget(self._widget_id, self._webview, self)
         self._browser.Bind(wx.html2.EVT_WEBVIEW_LOADED, self._on_load, self._webview)
         self._browser.Bind(wx.html2.EVT_WEBVIEW_SCRIPT_MESSAGE_RECEIVED, self._browser._on_message_received, self._webview)
-        self._webview.LoadURL(get_resource_path(f"{self._widget_id.name.lower()}.html").as_uri())
+        self._browser.Bind(wx.html2.EVT_WEBVIEW_SCRIPT_RESULT, self.on_script_result)
+        # self._webview.LoadURL(get_resource_path(f"{self._widget_id.name.lower()}.html").as_uri())
 
         sizer = wx.BoxSizer(wx.VERTICAL)
         sizer.Add(self._webview, 1, wx.EXPAND)
@@ -31,20 +32,16 @@ class WidgetContent(wx.Panel, WidgetBase, metaclass=WidgetMeta):
         return self
     
     def _on_load(self, event):
-        self._browser.runScriptAsync(BaseMsg(
-            sender_id=self._widget_id,
-            receiver_id=self._widget_id,
-            action=ActionId.ON_LOAD,
-            callback="Pb.listener",
-        ))
+        if self._browser._state.is_dir:
+            self._browser.runScriptAsync(BaseMsg(
+                sender_id=self._widget_id,
+                receiver_id=self._widget_id,
+                action=ActionId.ON_LOAD,
+            ))
 
-    def _on_message_received(self, event):
-        param = event.GetString()
-        base = BaseMsg.model_validate_json(param)
-
-        action = getattr(self, base.action, None)
-        if action:
-            action(param)
+    def on_script_result(self, event):
+        if event.IsError():
+            print("err(WidgetContent):", event.GetString())
 
 
 

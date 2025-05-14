@@ -79,37 +79,41 @@
 				.fa-table-cells { color: #2a9d8f; margin-right: 5px;}  
 					
 			</style>
-			<script>
-				let gallery_type = null;
-				Pb.onLoad(() => {
-					console.log("Pb.onLoad()");
-					send_get_gallery_type();
-				});
-				Pb.addCallbacks({
-					listenGalleryType: listenGalleryType,
-					appendLayout: appendLayout,
-				});
+		<script>
+			let g_gallery_type = null;
+			let g_path = null;
+      Pb.addListener((params) => {
+          const jres = JSON.parse(params);
+          const res = BaseMsg.parse(jres);
+          window[res.action.toLowerCase()](params);
+      });
 
-				function listenGalleryType(jres) {
-					console.log("listenGalleryType");
-					const res = GetGalleryTypeRes.parse(jres);
-					gallery_type = res.gallery_type;
-				}
+      on_load = (params) => {
+        const jres = JSON.parse(params);
+        console.log("on_load");
+				send_get_state({key: StateKey.enum.GALLERY_TYPE});
+				send_get_state({key: StateKey.enum.PATH});
+        send_list_directory({path: null, is_root: true});
+      }
 
-				function appendLayout(jres){
-					console.log("appendLayout");
-					const res = FolderRes.parse(jres);
-					if (gallery_type == GalleryType.LAYOUT_LIST) {
-						appendLayoutList(res);
-					} else if(gallery_type == GalleryType.LAYOUT_GALLERY) {
-						appendLayoutGallery(res);
-					}
-				}
-				function appendLayoutList(res) {
-				}
+			list_directory = (params) => {
+        console.log("list_directory");
+        const jres = JSON.parse(params);
+				const res = FolderRes.parse(jres);
+			}
 
-				function appendLayoutGallery(res) {
+			get_state = (params) => {
+        console.log("get_state");
+        const jres = JSON.parse(params);
+				const res = GetStateRes.parse(jres);
+				console.log(res.value);
+				if (res.key == StateKey.enum.PATH) {
+					g_path = res.value;
+				} else if (res.key == StateKey.enum.GALLERY_TYPE) {
+					g_gallery_type = res.value;
 				}
+			}
+
 
       </script>
     </head>

@@ -94,6 +94,7 @@
             div_path_name.classList.add("subitem", "path-name");
             div_path_name.innerHTML = item.name 
 
+            div_path_icon.addEventListener("click", open_path);
             div_path_name.addEventListener("click", open_path);
             div_item.appendChild(div_path_icon);
             div_item.appendChild(div_path_name);

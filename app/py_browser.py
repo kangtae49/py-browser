@@ -22,6 +22,8 @@ from app.widgets.widget_base import WidgetBase
 class State:
     template: ContentTemplate = ContentTemplate.CONTENT_LIST
     gallery_type: GalleryType = GalleryType.LAYOUT_LIST
+    path: str = ""
+    is_dir: bool = False
 
 class PyBrowser(wx.Frame):
     def __init__(self, parent, title):
@@ -138,12 +140,14 @@ class PyBrowser(wx.Frame):
 
     def runScriptAsync(self, res: BaseMsg):
         script = f"Pb.listener({repr(res.model_dump_json())})"
+        print(script)
         self.getWebview(res.receiver_id).RunScriptAsync(script)
         
 
     def _on_message_received(self, event):
         param = event.GetString()
         base_msg: BaseMsg = BaseMsg.model_validate_json(param)
+        print(f"_on_message_received: {base_msg.action.value.lower()}")
         func = getattr(self, f"{base_msg.action.value.lower()}")
         if func:
             func(param)
@@ -151,10 +155,8 @@ class PyBrowser(wx.Frame):
             print(f"Router.route action: {base_msg.action}")
 
 
-        # self.getWidget(base.receiver_id)._on_message_received(event)
-
-
     def list_directory(self, param: str | FolderReq) -> FolderRes:
+        print("list_directory")
         if isinstance(param, str):
             req = FolderReq.model_validate_json(param)
         else:
@@ -163,13 +165,12 @@ class PyBrowser(wx.Frame):
             root_path = self.getWidget(WidgetId.WIDGET_FOLDER).get_root_path()
         else:
             root_path = Path(req.path)
-        print(req)
+        # print(req)
         if req.is_root:
             res = FolderRes(
                 sender_id=req.sender_id,
                 receiver_id=req.receiver_id,
                 action=req.action,
-                callback=req.callback,
                 path=root_path.absolute().as_posix(),
                 is_root=True,
                 items=[
@@ -223,16 +224,15 @@ class PyBrowser(wx.Frame):
                 sender_id=req.sender_id,
                 receiver_id=req.receiver_id,
                 action=req.action,
-                callback=req.callback,
                 path=root_path.resolve().as_posix(),
                 is_root=req.is_root,
                 items=items
             )
-        if res and res.callback:
-            self.runScriptAsync(res)
+        self.runScriptAsync(res)
 
 
     def open_path(self, param: str | OpenPathReq):
+        print("open_path")
         if isinstance(param, str):
             req = OpenPathReq.model_validate_json(param)
         else:
@@ -264,19 +264,22 @@ class PyBrowser(wx.Frame):
             }
             if path.suffix.lower() not in exclude_suffix:
                 self.SetTitle(f"PyBrowser - {path.absolute().as_posix()}")
+                self._state.path = path.absolute().as_posix()
+                self._state.is_dir = False
                 self.getWebview(WidgetId.WIDGET_CONTENT).LoadURL(path.as_uri())
+
         elif path.is_dir():
             self.SetTitle(f"PyBrowser - {path.absolute().as_posix()}")
+            self._state.path = path.absolute().as_posix()
+            self._state.is_dir = True
             self.getWebview(WidgetId.WIDGET_CONTENT).LoadURL(get_resource_path(f"widget_{ContentTemplate.CONTENT_GALLERY.value.lower()}.html").as_uri())
 
-        res = OpenPathRes(
-            sender_id=req.sender_id,
-            receiver_id=req.receiver_id,
-            action=req.action,
-            callback=req.callback,
-            path=req.path,
-        )
-        if res and res.callback:
+            res = OpenPathRes(
+                sender_id=req.sender_id,
+                receiver_id=req.receiver_id,
+                action=req.action,
+                path=req.path,
+            )
             self.runScriptAsync(res)
 
 
@@ -289,17 +292,17 @@ class PyBrowser(wx.Frame):
             value = self._state.template
         elif req.key == StateKey.GALLERY_TYPE:
             value = self._state.gallery_type
+        elif req.key == StateKey.PATH:
+            value = self._state.path
 
         res = GetStateRes(
             sender_id=req.sender_id,
             receiver_id=req.receiver_id,
             action=req.action,
-            callback=req.callback,
             key=req.key,
             value=value
         )
-        if res and res.callback:
-            self.runScriptAsync(res)
+        self.runScriptAsync(res)
 
     def set_state(self, param: str | SetStateReq):
         if isinstance(param, str):
@@ -316,12 +319,10 @@ class PyBrowser(wx.Frame):
             sender_id=req.sender_id,
             receiver_id=req.receiver_id,
             action=req.action,
-            callback=req.callback,
             key=req.key,
             value=value
         )
-        if res and res.callback:
-            self.runScriptAsync(res)
+        self.runScriptAsync(res)
 
 def main():
     app = wx.App(False)

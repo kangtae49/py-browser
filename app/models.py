@@ -7,7 +7,6 @@ class BaseMsg(BaseModel):
     sender_id: WidgetId
     receiver_id: WidgetId
     action: ActionId
-    callback: str | None = None
 
 
 class FolderReq(BaseMsg):
@@ -39,15 +38,15 @@ class GetStateReq(BaseMsg):
 
 class GetStateRes(BaseMsg):
     key: StateKey
-    value: ContentTemplate | GalleryType
+    value: ContentTemplate | GalleryType | str
 
 class SetStateReq(BaseMsg):
     key: StateKey
-    value: ContentTemplate | GalleryType
+    value: ContentTemplate | GalleryType | str
 
 class SetStateRes(BaseMsg):
     key: StateKey
-    value: ContentTemplate | GalleryType
+    value: ContentTemplate | GalleryType | str
 
 
 
@@ -56,7 +55,6 @@ def createFolderReq (
         sender=WidgetId.PY_BROWSER,
         receiver_id=WidgetId.WIDGET_FOLDER,
         action=ActionId.LIST_DIRECTORY,
-        callback="Pb.callbacks.appendData",
         path=None,
         is_root=True
     ):
@@ -64,7 +62,6 @@ def createFolderReq (
         sender_id=WidgetId.PY_BROWSER,
         receiver_id=WidgetId.WIDGET_FOLDER,
         action=ActionId.LIST_DIRECTORY,
-        callback="Pb.callbacks.appendData",
         path=path,
         is_root=True,
     )

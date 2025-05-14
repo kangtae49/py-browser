@@ -16,7 +16,8 @@ const GalleryType = z.enum([
 
 const StateKey = z.enum([
     "TEMPLATE",
-    "GALLERY_TYPE"
+    "GALLERY_TYPE",
+    "PATH",
 ]);
 
 const WidgetId = z.enum([
@@ -40,7 +41,6 @@ const BaseMsg = z.object({
     sender_id: WidgetId,
     receiver_id: WidgetId,
     action: ActionId,
-    callback: Zod.string().nullable(),
 });
 
 const FolderReq = BaseMsg.extend({
@@ -75,19 +75,19 @@ const GetStateReq = BaseMsg.extend({
     key: StateKey
 });
 
-const GetGalleryTypeRes = BaseMsg.extend({
+const GetStateRes = BaseMsg.extend({
     key: StateKey,
-    value: z.union([ContentTemplate, GalleryType])
+    value: z.union([ContentTemplate, GalleryType, z.string()])
 });
 
 const SetGalleryTypeReq = BaseMsg.extend({
     key: StateKey,
-    value: z.union([ContentTemplate, GalleryType])
+    value: z.union([ContentTemplate, GalleryType, z.string()])
 });
 
 const SetGalleryTypeRes = BaseMsg.extend({
     key: StateKey,
-    value: z.union([ContentTemplate, GalleryType])
+    value: z.union([ContentTemplate, GalleryType, z.string()])
 });
 
 
@@ -96,7 +96,21 @@ const SetGalleryTypeRes = BaseMsg.extend({
 
 class PyBrowser {
     constructor() {
-        this.listener = null;
+        this.listener = (params) => {
+            console.log(`
+                <script>
+                    Pb.addListener((params) => {
+                        const jres = JSON.parse(params);
+                        const res = BaseMsg.parse(jres);
+                        window[res.action.toLowerCase()](params);
+                    });
+                    on_load = (params) => {
+                        const jres = JSON.parse(params);
+                        console.log("on_load");
+                    }
+                </script>
+            `)
+        }
     }
 
     getMessageHandlerName = () => {

@@ -25,6 +25,7 @@ class WidgetFolder(wx.Panel, WidgetBase, metaclass=WidgetMeta):
 
         self._browser.Bind(wx.html2.EVT_WEBVIEW_LOADED, self._on_load, self._webview)
         self._browser.Bind(wx.html2.EVT_WEBVIEW_SCRIPT_MESSAGE_RECEIVED, self._browser._on_message_received, self._webview)
+        self._browser.Bind(wx.html2.EVT_WEBVIEW_SCRIPT_RESULT, self.on_script_result)
         self._webview.LoadURL(get_resource_path(f"{self._widget_id.name.lower()}.html").as_uri())
 
         sizer = wx.BoxSizer(wx.VERTICAL)
@@ -40,8 +41,11 @@ class WidgetFolder(wx.Panel, WidgetBase, metaclass=WidgetMeta):
             sender_id=self._widget_id,
             receiver_id=self._widget_id,
             action=ActionId.ON_LOAD,
-            callback="Pb.listener",
         ))
+    
+    def on_script_result(self, event):
+        if event.IsError():
+            print("err(WidgetFolder):", event.GetString())
 
     def get_root_path(self):
         return self._root_path

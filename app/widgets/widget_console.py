@@ -28,7 +28,6 @@ class WidgetConsole(wx.Panel):
             sender_id=self._widget_id,
             receiver_id=self._widget_id,
             action=ActionId.ON_LOAD,
-            callback="Pb.listener",
         ))
 
     def get_original(self):

@@ -1,24 +1,31 @@
 send_list_directory = ({
     sender_id=WidgetId.enum.WIDGET_CONTENT,
-    receiver_id=WidgetId.enum.WIDGET_FOLDER,
+    receiver_id=WidgetId.enum.WIDGET_CONTENT,
     action=ActionId.enum.LIST_DIRECTORY,
-    callback="Pb.callbacks.appendLayout",
     path=null,
     is_root=false
 } = {}) => { 
-    Pb.sendMessage(FolderReq.parse({ sender_id, receiver_id, action, callback, path, is_root,}));}
+    console.log('send_list_directory');
+    Pb.sendMessage(FolderReq.parse({ sender_id, receiver_id, action, path, is_root,}));
+}
 
-send_get_gallery_type = ({
+send_get_state = ({
     sender_id=WidgetId.enum.WIDGET_CONTENT,
     receiver_id=WidgetId.enum.WIDGET_CONTENT,
-    action=ActionId.enum.GET_GALLERY_TYPE,
-    callback="Pb.callbacks.listenGalleryType",
-} = {}) => { Pb.sendMessage(GetGalleryTypeReq.parse({sender_id, receiver_id,action, callback, gallery_type, }));}
+    action=ActionId.enum.GET_STATE,
+    key=null,
+} = {}) => { 
+    console.log('send_get_state');
+    Pb.sendMessage(GetStateReq.parse({sender_id, receiver_id,action, key,}));
+}
 
-send_set_gallery_type = ({
+send_set_state = ({
     sender_id=WidgetId.enum.WIDGET_CONTENT,
     receiver_id=WidgetId.enum.WIDGET_CONTENT,
-    action=ActionId.enum.SET_GALLERY_TYPE,
-    callback=null,
-    gallery_type=null,
-} = {}) => { Pb.sendMessage(SetGalleryTypeReq.parse({sender_id, receiver_id,action, callback, gallery_type, }));}
+    action=ActionId.enum.SET_STATE,
+    key=null,
+    value=null,
+} = {}) => { 
+    console.log('send_set_state');
+    Pb.sendMessage(SetStateReq.parse({sender_id, receiver_id,action, key, value,}));
+}

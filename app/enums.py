@@ -14,6 +14,7 @@ class GalleryType(Enum):
 class StateKey(Enum):
     TEMPLATE = "TEMPLATE"
     GALLERY_TYPE = "GALLERY_TYPE"
+    PATH = "PATH"
 
 
 class WidgetId(Enum):
