@@ -1,7 +1,7 @@
 send_list_directory = ({
     sender_id=WidgetId.enum.WIDGET_FOLDER,
     receiver_id=WidgetId.enum.WIDGET_FOLDER,
-    action="api_list_directory",
+    action=ActionId.enum.LIST_DIRECTORY,
     callback="Pb.callbacks.appendData",
     path=null,
     is_root=false
@@ -11,7 +11,8 @@ send_list_directory = ({
 send_open_path = ({
     sender_id=WidgetId.enum.WIDGET_FOLDER,
     receiver_id=WidgetId.enum.WIDGET_FOLDER,
-    action="api_open_path",
+    action=ActionId.enum.OPEN_PATH,
     callback=null,
     path=null,
 } = {}) => { Pb.sendMessage(OpenPathReq.parse({sender_id, receiver_id,action, callback, path, }));}
+

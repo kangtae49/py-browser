@@ -1,5 +1,24 @@
 const z = Zod;
 
+const ContentTemplate = z.enum([
+    "CONTENT_LIST",
+    "CONTENT_GALLERY"
+]);
+
+const FolderTemplate = z.enum([
+    "FOLDER",
+]);
+
+const GalleryType = z.enum([
+    "LAYOUT_LIST",
+    "LAYOUT_GALLERY"
+]);
+
+const StateKey = z.enum([
+    "TEMPLATE",
+    "GALLERY_TYPE"
+]);
+
 const WidgetId = z.enum([
     "PY_BROWSER",
     "WIDGET_FOLDER",
@@ -7,10 +26,20 @@ const WidgetId = z.enum([
     "WIDGET_CONSOLE",
 ]);
 
+
+const ActionId = z.enum([
+    "APP_ACTION",
+    "ON_LOAD",
+    "LIST_DIRECTORY",
+    "OPEN_PATH",
+    "GET_STATE",
+    "SET_STATE",
+]);
+
 const BaseMsg = z.object({
     sender_id: WidgetId,
     receiver_id: WidgetId,
-    action: Zod.string(),
+    action: ActionId,
     callback: Zod.string().nullable(),
 });
 
@@ -20,6 +49,10 @@ const FolderReq = BaseMsg.extend({
 });
 
 const OpenPathReq = BaseMsg.extend({
+    path: z.string(),
+});
+
+const OpenPathRes = BaseMsg.extend({
     path: z.string(),
 });
 
@@ -38,24 +71,33 @@ const FolderRes = BaseMsg.extend({
     items: z.array(PathItem),
 });
 
+const GetStateReq = BaseMsg.extend({
+    key: StateKey
+});
+
+const GetGalleryTypeRes = BaseMsg.extend({
+    key: StateKey,
+    value: z.union([ContentTemplate, GalleryType])
+});
+
+const SetGalleryTypeReq = BaseMsg.extend({
+    key: StateKey,
+    value: z.union([ContentTemplate, GalleryType])
+});
+
+const SetGalleryTypeRes = BaseMsg.extend({
+    key: StateKey,
+    value: z.union([ContentTemplate, GalleryType])
+});
+
+
 
 
 
 class PyBrowser {
     constructor() {
-        this.MESSAGE_HANDLER_NAME = null;
-        this.message_handler = null;
-        this._onLoad = null;
-        this.callbacks = {};
+        this.listener = null;
     }
-
-    init = (jres) => {
-        const res = BaseMsg.parse(jres);
-        this.MESSAGE_HANDLER_NAME = res.receiver_id;
-        this.message_handler = window[this.MESSAGE_HANDLER_NAME];
-        this._onLoad();
-    }
-
 
     getMessageHandlerName = () => {
         return this.MESSAGE_HANDLER_NAME;
@@ -66,29 +108,12 @@ class PyBrowser {
     }
 
     sendMessage = (msg) => {
-        if (this.MESSAGE_HANDLER_NAME) {
-            this.message_handler.postMessage(JSON.stringify(msg));
-        } else {
-            console.error("https://docs.wxpython.org/wx.html2.WebView.html#wx.html2.WebView.AddScriptMessageHandler");
-        }
+        // https://docs.wxpython.org/wx.html2.WebView.html#wx.html2.WebView.AddScriptMessageHandler
+        window[msg.sender_id].postMessage(JSON.stringify(msg));
     }
 
-
-    listener = (params) => {
-        const jres = JSON.parse(params);
-        const res = BaseMsg.parse(jres);
-        if (res.callback){
-            const func = (res.callback).split('.').reduce((acc, key) => acc?.[key], window);
-            if (typeof func === "function"){
-                func(jres);
-            } else {
-                alert("Error callback: " + res.callback);
-            }
-        }
-    }
-
-    addCallbacks = (callbacks) => {
-        this.callbacks = callbacks;
+    addListener = (listener) => {
+        this.listener = listener
     }
     
 
@@ -97,18 +122,3 @@ class PyBrowser {
 const pyBrowser = new PyBrowser();
 
 window.Pb = pyBrowser;
-window.onerror = (message, source, lineno, colno, error) => {
-    const err = {
-        message: message,
-        source: source,
-        lineno: lineno,
-        colno: colno,
-        error: error,
-    }
-    alert("onerror:" + JSON.stringify(err));
-    return true;
-};
-
-window.addEventListener("unhandledrejection", (event) => {
-  alert("Unhandled rejection:" + event.reason);
-});

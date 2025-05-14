@@ -11,8 +11,8 @@
     <script src="widget_folder.js"></script>
     <style>
       body { margin: 0; padding: 0; height: 100vh; display: flex;}
-      .container { padding:0; margin:0; }
-      .tree { padding: 0 0 0 0px; margin: 0; font-size: 0.8em}
+      .container { padding:0; margin:0; font-size: 0.8em}
+      .tree { padding: 0 0 0 0px; margin: 0; }
       .tree ul { padding: 0 0 0 8px; margin: 0;}
       .tree li { list-style: none; padding: 0; margin:0; white-space: nowrap;}
       .tree .item { padding: 0 3px 1px 3px; margin: 0; cursor: pointer; display: inline-block;}
@@ -24,166 +24,173 @@
       .fa-file-code { color: #2a9d8f; margin-right: 5px;}
     </style>
     <script>
-        Pb.onLoad(() => {
-          send_list_directory({path: null, is_root: true});
+      Pb.addListener((params) => {
+          const jres = JSON.parse(params);
+          const res = BaseMsg.parse(jres);
+          window[res.action.toLowerCase()](params);
+      });
+
+      on_load = (params) => {
+        const jres = JSON.parse(params);
+        console.log("on_load");
+        send_list_directory({path: null, is_root: true});
+      }
+      
+      list_directory = (params) => {
+        const jres = JSON.parse(params);
+        console.log("list_directory");
+        const res = FolderRes.parse(jres);
+        let parent_node = document.querySelector("#file-tree");
+
+        if (res.is_root) {
+          parent_node.innerHTML = "";
+        } else {
+          parent_node = document.querySelector("li[data-path='" + encodeURIComponent(res.path) + "']");
+        }
+        const ul = document.createElement("ul");
+        parent_node.appendChild(ul);
+        
+        for (const item of res.items) {
+          const li = document.createElement("li");
+          if (item.is_folder) {
+            li.dataset.is_folder = "true";
+            li.dataset.expanded = "false";
+            li.dataset.has_children = item.has_children;
+            li.dataset.path = encodeURIComponent(item.path);
+            const div_item = document.createElement("div");
+            div_item.classList.add("item");
+            
+            const div_path_icon = document.createElement("div");
+            div_path_icon.classList.add("subitem", "path-icon");
+            if(item.has_children){
+              div_path_icon.innerHTML = `<i class="fa-solid fa-folder-plus"></i>`
+            } else {
+              div_path_icon.innerHTML = `<i class="fa-solid fa-folder"></i>`
+            }
+            
+            const div_path_name = document.createElement("div");
+            div_path_name.classList.add("subitem", "path-name");
+            div_path_name.innerHTML = item.name 
+            
+            if (res.is_root) {
+              div_item.classList.add("selected");
+            }
+            div_path_icon.addEventListener("click", toggle_folder);
+            div_path_name.addEventListener("click", open_path);
+            div_item.appendChild(div_path_icon);
+            div_item.appendChild(div_path_name);
+            li.appendChild(div_item);
+            
+          } else {
+            li.dataset.path = encodeURIComponent(item.path);
+            const div_item = document.createElement("div");
+            div_item.classList.add("item");
+            
+            const div_path_icon = document.createElement("div");
+            div_path_icon.classList.add("subitem", "path-icon");
+            div_path_icon.innerHTML = `<i class="fa-solid fa-file-code"></i>`
+            
+            const div_path_name = document.createElement("div");
+            div_path_name.classList.add("subitem", "path-name");
+            div_path_name.innerHTML = item.name 
+
+            div_path_name.addEventListener("click", open_path);
+            div_item.appendChild(div_path_icon);
+            div_item.appendChild(div_path_name);
+            li.appendChild(div_item);
+          }
+          ul.appendChild(li);
+        }
+      }
+
+      const open_path = (event) => {
+        event.stopPropagation();
+        const li = event.currentTarget.parentElement.parentElement;
+        const div_item = event.currentTarget.parentElement;
+        const path = decodeURIComponent(li.dataset.path);
+
+        document.querySelectorAll(".tree li div").forEach(el => {
+          el.classList.remove("selected");
         });
-        Pb.addCallbacks({
-          appendData: appendData
+        div_item.classList.add("selected")
+        send_open_path({path: path});
+      }
+
+      const toggle_folder = (event) => {
+        event.stopPropagation();
+        const li = event.currentTarget.parentElement.parentElement;
+        const div_item = event.currentTarget.parentElement;
+        const path = decodeURIComponent(li.dataset.path);
+
+        document.querySelectorAll(".tree li>div").forEach(el => {
+          el.classList.remove("selected");
         });
-
-
-        function appendData(jres) {
-          const res = FolderRes.parse(jres);
-          let parent_node = document.querySelector("#file-tree");
-
-          if (res.is_root) {
-            parent_node.innerHTML = "";
-          } else {
-            parent_node = document.querySelector("li[data-path='" + encodeURIComponent(res.path) + "']");
-          }
-          const ul = document.createElement("ul");
-          parent_node.appendChild(ul);
-          
-          for (const item of res.items) {
-            const li = document.createElement("li");
-            if (item.is_folder) {
-              li.dataset.is_folder = "true";
-              li.dataset.expanded = "false";
-              li.dataset.has_children = item.has_children;
-              li.dataset.path = encodeURIComponent(item.path);
-              const div_item = document.createElement("div");
-              div_item.classList.add("item");
-              
-              const div_path_icon = document.createElement("div");
-              div_path_icon.classList.add("subitem", "path-icon");
-              if(item.has_children){
-                div_path_icon.innerHTML = `<i class="fa-solid fa-folder-plus"></i>`
-              } else {
-                div_path_icon.innerHTML = `<i class="fa-solid fa-folder"></i>`
-              }
-              
-              const div_path_name = document.createElement("div");
-              div_path_name.classList.add("subitem", "path-name");
-              div_path_name.innerHTML = item.name 
-              
-              if (res.is_root) {
-                div_item.classList.add("selected");
-              }
-              div_path_icon.addEventListener("click", toggle_folder);
-              div_path_name.addEventListener("click", open_path);
-              div_item.appendChild(div_path_icon);
-              div_item.appendChild(div_path_name);
-              li.appendChild(div_item);
-              
-            } else {
-              li.dataset.path = encodeURIComponent(item.path);
-              const div_item = document.createElement("div");
-              div_item.classList.add("item");
-              
-              const div_path_icon = document.createElement("div");
-              div_path_icon.classList.add("subitem", "path-icon");
-              div_path_icon.innerHTML = `<i class="fa-solid fa-file-code"></i>`
-              
-              const div_path_name = document.createElement("div");
-              div_path_name.classList.add("subitem", "path-name");
-              div_path_name.innerHTML = item.name 
-
-              div_path_name.addEventListener("click", open_path);
-              div_item.appendChild(div_path_icon);
-              div_item.appendChild(div_path_name);
-              li.appendChild(div_item);
-            }
-            ul.appendChild(li);
-          }
+        div_item.classList.add("selected")
+        isExpanded = li.dataset.expanded === "true";
+        li.dataset.expanded = !isExpanded;
+        if (isExpanded) {
+          li.querySelectorAll("ul").forEach(ul => ul.remove());
+        } else {
+          send_list_directory({path: path, is_root: false});
         }
+      }
 
-        const toggle_folder = (event) => {
+
+      window.addEventListener("keydown", function(event) {
+        const keys = ["Enter", "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", " "]
+        if(keys.includes(event.key)){
           event.stopPropagation();
-          const li = event.currentTarget.parentElement.parentElement;
-          const div_item = event.currentTarget.parentElement;
-          const path = decodeURIComponent(li.dataset.path);
-
-          document.querySelectorAll(".tree li>div").forEach(el => {
-            el.classList.remove("selected");
-          });
-          div_item.classList.add("selected")
-          isExpanded = li.dataset.expanded === "true";
-          li.dataset.expanded = !isExpanded;
-          if (isExpanded) {
-            li.querySelectorAll("ul").forEach(ul => ul.remove());
-          } else {
-            send_list_directory({path: path, is_root: false});
-          }
+          event.preventDefault();
+        } else {
+          return;
         }
+        const div_item = document.querySelector(".selected");
+        const div_path_icon = div_item.querySelector(".path-icon");
+        const div_path_name = div_item.querySelector(".path-name");
+        const li = div_item.parentElement;
+        
 
-        const open_path = (event) => {
-          event.stopPropagation();
-          const li = event.currentTarget.parentElement.parentElement;
-          const div_item = event.currentTarget.parentElement;
-          const path = decodeURIComponent(li.dataset.path);
-
-          document.querySelectorAll(".tree li div").forEach(el => {
-            el.classList.remove("selected");
-          });
-          div_item.classList.add("selected")
-          send_open_path({path: path});
-        }
-
-        window.addEventListener("keydown", function(event) {
-          const keys = ["Enter", "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", " "]
-          if(keys.includes(event.key)){
-            event.stopPropagation();
-            event.preventDefault();
+        if (event.key === "Enter") {
+          if (li.dataset.is_folder){
+            div_path_icon.click();
           } else {
-            return;
-          }
-          const div_item = document.querySelector(".selected");
-          const div_path_icon = div_item.querySelector(".path-icon");
-          const div_path_name = div_item.querySelector(".path-name");
-          const li = div_item.parentElement;
-          
-
-          if (event.key === "Enter") {
-            if (li.dataset.is_folder){
-              div_path_icon.click();
-            } else {
-              div_path_name.click();
-            }
-          } else if(event.key === "ArrowUp") {
-            const arr = Array.from(document.querySelectorAll("div.item"));
-            const idx = arr.indexOf(div_item);
-            const prev_idx = Math.max(idx-1, 0);
-            if(idx != prev_idx){
-              arr[idx].classList.remove("selected");
-              arr[prev_idx].classList.add("selected");
-            }
-          } else if(event.key === "ArrowDown") {
-            const arr = Array.from(document.querySelectorAll("div.item"));
-            const idx = arr.indexOf(div_item);
-            const next_idx = Math.min(idx+1, arr.length-1);
-            if(idx != next_idx){
-              arr[idx].classList.remove("selected");
-              arr[next_idx].classList.add("selected");
-              arr[next_idx].focus();
-            }
-          } else if(event.key === "ArrowLeft") {
-            const parent_li = li.parentElement.parentElement;
-            const parent_path_icon = parent_li.querySelector(".path-icon");
-            if(parent_path_icon){
-              parent_path_icon.click();
-            }
-          } else if(event.key === "ArrowRight") {
-            if (li.dataset.is_folder){
-              div_path_icon.click();
-            } else {
-              div_path_name.click();
-            }
-          } else if(event.key === " "){
             div_path_name.click();
           }
+        } else if(event.key === "ArrowUp") {
+          const arr = Array.from(document.querySelectorAll("div.item"));
+          const idx = arr.indexOf(div_item);
+          const prev_idx = Math.max(idx-1, 0);
+          if(idx != prev_idx){
+            arr[idx].classList.remove("selected");
+            arr[prev_idx].classList.add("selected");
+          }
+        } else if(event.key === "ArrowDown") {
+          const arr = Array.from(document.querySelectorAll("div.item"));
+          const idx = arr.indexOf(div_item);
+          const next_idx = Math.min(idx+1, arr.length-1);
+          if(idx != next_idx){
+            arr[idx].classList.remove("selected");
+            arr[next_idx].classList.add("selected");
+            arr[next_idx].focus();
+          }
+        } else if(event.key === "ArrowLeft") {
+          const parent_li = li.parentElement.parentElement;
+          const parent_path_icon = parent_li.querySelector(".path-icon");
+          if(parent_path_icon){
+            parent_path_icon.click();
+          }
+        } else if(event.key === "ArrowRight") {
+          if (li.dataset.is_folder){
+            div_path_icon.click();
+          } else {
+            div_path_name.click();
+          }
+        } else if(event.key === " "){
+          div_path_name.click();
+        }
 
-          document.querySelector(".selected").scrollIntoView({ behavior: 'auto', block: 'nearest', inline: 'end' });
-        });
+        document.querySelector(".selected").scrollIntoView({ behavior: 'auto', block: 'nearest', inline: 'end' });
+      });
     </script>
   </head>
 

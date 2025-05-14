@@ -1,12 +1,27 @@
+import os
 import wx
+from dataclasses import dataclass
+from pathlib import Path
+from datetime import datetime
 import wx.aui as aui
 from wx.html2 import WebView 
 
-from app.models.base import WidgetId, BaseMsg
+from app.utils.file_utils import get_default_root_path, get_resource_path
+from app.enums import WidgetId, ContentTemplate, GalleryType, StateKey
+from app.models import createFolderReq
+from app.models import BaseMsg
+from app.models import FolderReq, FolderRes, PathItem
+from app.models import GetStateReq, GetStateRes
+from app.models import SetStateReq, SetStateRes
+from app.models import OpenPathReq, OpenPathRes
 from app.widgets.widget_folder import WidgetFolder
 from app.widgets.widget_content import WidgetContent
 from app.widgets.widget_base import WidgetBase
-from app.widgets import api
+
+@dataclass
+class State:
+    template: ContentTemplate = ContentTemplate.CONTENT_LIST
+    gallery_type: GalleryType = GalleryType.LAYOUT_LIST
 
 class PyBrowser(wx.Frame):
     def __init__(self, parent, title):
@@ -15,6 +30,8 @@ class PyBrowser(wx.Frame):
         self._mgr.SetManagedWindow(self)
         self._webviews = {}
         self._widgets = {}
+
+        self._state = State()
 
         # -----------
         # Menu
@@ -81,11 +98,6 @@ class PyBrowser(wx.Frame):
 
         self._mgr.Update()
 
-    def _on_message_received(self, event):
-        param = event.GetString()
-        base = BaseMsg.model_validate_json(param)
-        self.getWidget(base.receiver_id)._on_message_received(event)
-
 
     def _register_widget(self, widget_id: WidgetId, webview: WebView, widget: WidgetBase):
         self._webviews.update({widget_id: webview})
@@ -103,12 +115,16 @@ class PyBrowser(wx.Frame):
         self._menu_console.Check(False)
         event.Skip()
 
+    def on_close(self, event):
+        self._mgr.UnInit()
+        self.Destroy()
+
     def _on_open_folder(self, event):
         with wx.DirDialog(None, "Select Folder:",
                       style=wx.DD_DEFAULT_STYLE | wx.DD_DIR_MUST_EXIST) as dlg:
             if dlg.ShowModal() == wx.ID_OK:
                 selected_path = dlg.GetPath()
-                self.runApi(api.createFolderReq(path=selected_path, is_root=True))
+                self.runApi(createFolderReq(path=selected_path, is_root=True))
 
     def getWebview(self, widget_id: WidgetId) -> WebView:
         return self._webviews.get(widget_id)
@@ -118,16 +134,194 @@ class PyBrowser(wx.Frame):
 
 
     def runApi(self, req: BaseMsg):
-        getattr(self.getWidget(req.receiver_id), req.action)(req.model_dump_json())
+        getattr(self, req.action.value.lower())(req.model_dump_json())
 
     def runScriptAsync(self, res: BaseMsg):
         script = f"Pb.listener({repr(res.model_dump_json())})"
         self.getWebview(res.receiver_id).RunScriptAsync(script)
         
-    def on_close(self, event):
-        self._mgr.UnInit()
-        self.Destroy()
 
+    def _on_message_received(self, event):
+        param = event.GetString()
+        base_msg: BaseMsg = BaseMsg.model_validate_json(param)
+        func = getattr(self, f"{base_msg.action.value.lower()}")
+        if func:
+            func(param)
+        else:
+            print(f"Router.route action: {base_msg.action}")
+
+
+        # self.getWidget(base.receiver_id)._on_message_received(event)
+
+
+    def list_directory(self, param: str | FolderReq) -> FolderRes:
+        if isinstance(param, str):
+            req = FolderReq.model_validate_json(param)
+        else:
+            req = param
+        if req.path is None:
+            root_path = self.getWidget(WidgetId.WIDGET_FOLDER).get_root_path()
+        else:
+            root_path = Path(req.path)
+        print(req)
+        if req.is_root:
+            res = FolderRes(
+                sender_id=req.sender_id,
+                receiver_id=req.receiver_id,
+                action=req.action,
+                callback=req.callback,
+                path=root_path.absolute().as_posix(),
+                is_root=True,
+                items=[
+                    PathItem(
+                        is_folder=True,
+                        name=root_path.name or root_path.absolute().as_posix(),
+                        path=root_path.absolute().as_posix(),
+                        has_children=True,
+                        size=root_path.stat().st_size,
+                        mtime=datetime.fromtimestamp(root_path.stat().st_mtime).strftime("%Y-%m-%d %H:%M:%S"),
+                    )
+                ]
+            )
+        else:
+            items = []
+            for item in root_path.iterdir():
+                # if not item.exists():
+                #     continue
+                # if item.is_junction():
+                #     continue
+                # if item.is_symlink():
+                #     continue
+                # if is_hidden(item):
+                #     continue
+                if not os.access(item.absolute(), os.R_OK):
+                    continue
+                if item.is_dir():
+                    has_children = False
+                    try:
+                        has_children = any(item.iterdir())
+                    except:
+                        continue
+                    items.append(PathItem(
+                        is_folder=True,
+                        name=item.name,
+                        path=item.absolute().as_posix(),
+                        has_children=has_children,
+                        size=item.stat().st_size,
+                        mtime=datetime.fromtimestamp(item.stat().st_mtime).strftime("%Y-%m-%d %H:%M:%S"),
+                    ))
+                else:
+                    items.append(PathItem(
+                        is_folder=False,
+                        name=item.name,
+                        path=item.absolute().as_posix(),
+                        has_children=False,
+                        size=item.stat().st_size,
+                        mtime=datetime.fromtimestamp(item.stat().st_mtime).strftime("%Y-%m-%d %H:%M:%S"),
+                    ))
+            res = FolderRes(
+                sender_id=req.sender_id,
+                receiver_id=req.receiver_id,
+                action=req.action,
+                callback=req.callback,
+                path=root_path.resolve().as_posix(),
+                is_root=req.is_root,
+                items=items
+            )
+        if res and res.callback:
+            self.runScriptAsync(res)
+
+
+    def open_path(self, param: str | OpenPathReq):
+        if isinstance(param, str):
+            req = OpenPathReq.model_validate_json(param)
+        else:
+            req = param
+
+        path = Path(req.path)
+
+        # self.log(f"{path}: {path.suffix}")
+        # openable_suffix = {
+        #     ".html", ".htm", ".mht", ".mhtml", ".txt", ".pdf",
+        #     ".odt", ".ods", ".odp", ".csv", ".tsv", ".json", ".xml",
+        #     ".md", ".rtf", ".epub", 
+        #     ".js", ".cpp", ".c", ".py", ".rs", ".hs", ".jsp", ".sh", ".bat", ".ps1",
+        #     ".php", ".asp", "jsp"
+        #     ".ini", ".ipynb", ".kml", ".cif", ".pdb", ".xyz",
+        #     ".reg", ".toml", ".gitignore", ".cfg", ".log",
+        #     ".bmp", ".jpg", ".jpeg", ".png", ".gif", ".svg", 
+        #     ".webp", ".ico", ".otf",
+        #     ".mp3", ".mp4", ".webm", ".ogg", ".ogv", ".mov", ".avi", ".wmv", ".flv",
+        #     ".wav", ".m4a", ".wma",
+        # }
+        # if path.suffix.lower() in openable_suffix:
+        # wx.LaunchDefaultApplication(str(path.absolute()))
+        # wx.LaunchDefaultBrowser(str(path.absolute()))
+
+        if path.is_file():
+            exclude_suffix = {
+                ".exe", ".lnk", ".com",
+            }
+            if path.suffix.lower() not in exclude_suffix:
+                self.SetTitle(f"PyBrowser - {path.absolute().as_posix()}")
+                self.getWebview(WidgetId.WIDGET_CONTENT).LoadURL(path.as_uri())
+        elif path.is_dir():
+            self.SetTitle(f"PyBrowser - {path.absolute().as_posix()}")
+            self.getWebview(WidgetId.WIDGET_CONTENT).LoadURL(get_resource_path(f"widget_{ContentTemplate.CONTENT_GALLERY.value.lower()}.html").as_uri())
+
+        res = OpenPathRes(
+            sender_id=req.sender_id,
+            receiver_id=req.receiver_id,
+            action=req.action,
+            callback=req.callback,
+            path=req.path,
+        )
+        if res and res.callback:
+            self.runScriptAsync(res)
+
+
+    def get_state(self, param: str | GetStateReq):
+        if isinstance(param, str):
+            req = GetStateReq.model_validate_json(param)
+        else:
+            req = param
+        if req.key == StateKey.TEMPLATE:
+            value = self._state.template
+        elif req.key == StateKey.GALLERY_TYPE:
+            value = self._state.gallery_type
+
+        res = GetStateRes(
+            sender_id=req.sender_id,
+            receiver_id=req.receiver_id,
+            action=req.action,
+            callback=req.callback,
+            key=req.key,
+            value=value
+        )
+        if res and res.callback:
+            self.runScriptAsync(res)
+
+    def set_state(self, param: str | SetStateReq):
+        if isinstance(param, str):
+            req = SetStateReq.model_validate_json(param)
+        else:
+            req = param
+        if req.key == StateKey.TEMPLATE:
+            self._state.template = req.value
+            value = self._state.template
+        elif req.key == StateKey.GALLERY_TYPE:
+            self._state.gallery_type = req.value
+            value = self._state.gallery_type
+        res = SetStateRes(
+            sender_id=req.sender_id,
+            receiver_id=req.receiver_id,
+            action=req.action,
+            callback=req.callback,
+            key=req.key,
+            value=value
+        )
+        if res and res.callback:
+            self.runScriptAsync(res)
 
 def main():
     app = wx.App(False)

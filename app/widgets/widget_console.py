@@ -1,7 +1,8 @@
 import wx
 from wx.html2 import WebView
 from app.utils.file_utils import get_resource_path
-from app.models.base import WidgetId, BaseMsg
+from app.models import WidgetId, BaseMsg, ActionId
+
 
 class WidgetConsole(wx.Panel):
     def __init__(self, *args, **kwargs):
@@ -26,14 +27,10 @@ class WidgetConsole(wx.Panel):
         self._browser.runScriptAsync(BaseMsg(
             sender_id=self._widget_id,
             receiver_id=self._widget_id,
-            action="_on_load",
-            callback="Pb.init",
+            action=ActionId.ON_LOAD,
+            callback="Pb.listener",
         ))
 
-    def _on_message_received(self, event):
-        param = event.GetString()
-        base = BaseMsg.model_validate_json(param)
-
-        action = getattr(self, base.action, None)
-        if action:
-            action(param)    
+    def get_original(self):
+        return self
+    

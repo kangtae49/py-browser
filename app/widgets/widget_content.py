@@ -1,18 +1,19 @@
 import wx
 from wx.html2 import WebView
 from app.utils.file_utils import get_resource_path
-from app.models.base import WidgetId, BaseMsg, ContentTemplate
+from app.models import WidgetId, BaseMsg
+from app.enums import ActionId
 from app.widgets.widget_base import WidgetBase, WidgetMeta
+
 
 class WidgetContent(wx.Panel, WidgetBase, metaclass=WidgetMeta):
     def __init__(self, *args, **kwargs):
-        self._browser: WebView = kwargs.pop("browser", None)
+        from app.py_browser import PyBrowser
+        self._browser: PyBrowser = kwargs.pop("browser", None)
         self._widget_id: WidgetId = kwargs.pop("widget_id", None)
 
         super().__init__(*args, **kwargs)
         self._webview = WebView.New(self)
-
-        self._template = ContentTemplate.CONTENT
 
         self._webview.EnableAccessToDevTools(True)
         self._webview.MSWSetModernEmulationLevel(True)
@@ -33,8 +34,8 @@ class WidgetContent(wx.Panel, WidgetBase, metaclass=WidgetMeta):
         self._browser.runScriptAsync(BaseMsg(
             sender_id=self._widget_id,
             receiver_id=self._widget_id,
-            action="_on_load",
-            callback="Pb.init",
+            action=ActionId.ON_LOAD,
+            callback="Pb.listener",
         ))
 
     def _on_message_received(self, event):
@@ -44,13 +45,6 @@ class WidgetContent(wx.Panel, WidgetBase, metaclass=WidgetMeta):
         action = getattr(self, base.action, None)
         if action:
             action(param)
-    
-    def load_template(self, template: ContentTemplate=None):
-        if template:
-            self._template = template
-        self._webview.LoadURL(get_resource_path(template.value).as_uri())
-
-
 
 
 
