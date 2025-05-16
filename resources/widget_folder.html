@@ -115,6 +115,9 @@
       const go_path = (res) => {
         if (res.path == res.select_path){
           const li = document.querySelector("li[data-path='" + encodeURIComponent(res.select_path) + "']");
+          if (li.dataset.expanded == "true"){
+            return;
+          }
           document.querySelectorAll(".tree li>div").forEach(el => {
             el.classList.remove("selected");
           });
@@ -134,10 +137,8 @@
             const next_path = arr_select_path.slice(0, arr_path.length+1).join("/");
             send_list_directory({path: next_path, is_root: false, select_path: res.select_path})
           }
-
         }
-
-        
+        document.querySelector(".selected").scrollIntoView({ behavior: 'auto', block: 'nearest', inline: 'end' });
       }
 
       const click_open_path = (event) => {

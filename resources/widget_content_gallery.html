@@ -85,12 +85,7 @@
 
       const cur_dir_browser = document.querySelector(".cur-dir .dir-browser");
       cur_dir_browser.dataset.path = res.path;
-      cur_dir_browser.addEventListener("click", (event) => {
-        window.getSelection().removeAllRanges();
-        const target = event.currentTarget;
-        const item = target.dataset;
-        send_open_path({ path: item.path, open_path_type: OpenPathType.enum.BROWSER });
-      });
+      cur_dir_browser.addEventListener("click", click_cur_dir_browser);
 
       const cur_dir_all = document.querySelector(".cur-dir .dir-all");
       const arr_dir = res.path.split("/").filter((x) => x);
@@ -105,18 +100,11 @@
         div_part.dataset.dir_sub = dir_sub;
         div_part.dataset.path = res.path;
         div_part.innerHTML = arr_dir[i];
-        div_part.addEventListener("click", (event) => {
-          const dir_sub = event.currentTarget.dataset.dir_sub;
-          const root_path = event.currentTarget.dataset.path.split("/")[0] + "/";
-          send_list_directory({path: root_path, select_path: dir_sub, is_root: true, receiver_id: WidgetId.enum.WIDGET_FOLDER});
-        });
+        div_part.addEventListener("click", click_cur_dir_part);
         cur_dir_all.appendChild(div_part);
         cur_dir_all.append("/");
       }
-      cur_dir_icon.addEventListener("click", (event) => {
-        const root_path = event.currentTarget.dataset.path.split("/")[0] + "/";
-        send_list_directory({path: root_path, select_path: root_path, is_root: true, receiver_id: WidgetId.enum.WIDGET_FOLDER});
-      });
+      cur_dir_icon.addEventListener("click", click_cur_dir);
 
 
       const div_file_table = document.querySelector(".filelist .file-table");
@@ -238,6 +226,24 @@
         send_set_state({key: StateKey.enum.GALLERY_TYPE, value: GalleryType.enum.LAYOUT_GALLERY});
       }
     };
+
+    click_cur_dir_browser = (event) => {
+      window.getSelection().removeAllRanges();
+      const target = event.currentTarget;
+      const item = target.dataset;
+      send_open_path({ path: item.path, open_path_type: OpenPathType.enum.BROWSER });
+    }
+
+    click_cur_dir_part = (event) => {
+      const dir_sub = event.currentTarget.dataset.dir_sub;
+      const root_path = event.currentTarget.dataset.path.split("/")[0] + "/";
+      send_list_directory({path: root_path, select_path: dir_sub, is_root: true, receiver_id: WidgetId.enum.WIDGET_FOLDER});
+    }
+
+    click_cur_dir = (event) => {
+      const root_path = event.currentTarget.dataset.path.split("/")[0] + "/";
+      send_list_directory({path: root_path, select_path: root_path, is_root: true, receiver_id: WidgetId.enum.WIDGET_FOLDER});
+    }
 
     function formatFileSize(bytes) {
       if (bytes === 0) return '0KB';
