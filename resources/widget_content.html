@@ -376,6 +376,7 @@
     }
 
     click_cur_dir_part = (event) => {
+      console.log('click_cur_dir_part');
       const dir_sub = event.currentTarget.dataset.dir_sub;
       const root_path = event.currentTarget.dataset.path.split("/")[0] + "/";
       send_list_directory({path: root_path, select_path: dir_sub, is_root: true, receiver_id: WidgetId.enum.WIDGET_FOLDER});

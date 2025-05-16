@@ -54,7 +54,6 @@
           const li = document.createElement("li");
           if (item.is_dir) {
             li.dataset.is_dir = "true";
-            li.dataset.expanded = "false";
             li.dataset.has_children = item.has_children;
             li.dataset.path = encodeURIComponent(item.path);
             const div_item = document.createElement("div");
@@ -115,16 +114,16 @@
       const go_path = (res) => {
         if (res.path == res.select_path){
           const li = document.querySelector("li[data-path='" + encodeURIComponent(res.select_path) + "']");
-          if (li.dataset.expanded == "true"){
-            return;
-          }
           document.querySelectorAll(".tree li>div").forEach(el => {
             el.classList.remove("selected");
           });
-          
-          li.dataset.expanded = "true";
           const div_item = li.querySelector("div");
           div_item.classList.add("selected")
+
+          if (li.querySelector("li") != null) {
+            return;
+          }
+
           send_list_directory({path: res.path, is_root: false})
           send_open_path({path: res.path});
 
@@ -162,8 +161,7 @@
           el.classList.remove("selected");
         });
         div_item.classList.add("selected")
-        isExpanded = li.dataset.expanded === "true";
-        li.dataset.expanded = !isExpanded;
+        isExpanded = li.querySelector("li") != null;
         if (isExpanded) {
           li.querySelectorAll("ul").forEach(ul => ul.remove());
         } else {
@@ -212,7 +210,7 @@
         } else if(event.key === "ArrowLeft") {
           const parent_li = li.parentElement.parentElement;
           const parent_path_icon = parent_li.querySelector(".path-icon");
-          if (li.dataset.is_dir && li.dataset.expanded == "true") {
+          if (li.dataset.is_dir && li.querySelector("li") != null) {
             div_path_icon.click();
           } else {
             parent_path_icon.click();
