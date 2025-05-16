@@ -23,5 +23,5 @@ uv run py_browser.py
 
 ```sh
 .venv\Script\activate.bat
-pyinstaller --onefile --windowed --add-data "resources;resources" --add-binary ".venv/Lib/site-packages/wx/WebView2Loader.dll;." py_browser.py
+pyinstaller --onefile --windowed --add-data "resources;resources" --add-binary ".venv/Lib/site-packages/wx/WebView2Loader.dll;." --name py_browser.exe main.py
 ```
