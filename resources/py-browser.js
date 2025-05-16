@@ -71,6 +71,7 @@ const PathItem = z.object({
     name: z.string(),
     path: z.string(),
     ext: z.string(),
+    mime: z.string(),
     has_children: z.boolean().default(false),
     mtime: z.string(),
     size: z.number().int(),

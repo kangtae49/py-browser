@@ -27,6 +27,7 @@ class PathItem(BaseModel):
     name: str
     path: str
     ext: str
+    mime: str
     has_children: bool = False
     mtime: str
     size: int

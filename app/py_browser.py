@@ -7,7 +7,7 @@ from datetime import datetime
 import wx.aui as aui
 from wx.html2 import WebView 
 
-from app.utils.file_utils import get_default_root_path, get_resource_path, get_mimetype_head
+from app.utils.file_utils import get_default_root_path, get_resource_path, get_mimetype_head, get_mimetype
 from app.enums import WidgetId, ContentTemplate, GalleryType, StateKey, OpenPathType
 from app.models import createFolderReq
 from app.models import BaseMsg
@@ -195,6 +195,7 @@ class PyBrowser(wx.Frame):
                         name=root_path.name or root_path.absolute().as_posix(),
                         path=root_path.absolute().as_posix(),
                         ext=root_path.suffix.lower(),
+                        mime=get_mimetype(root_path.name),
                         has_children=True,
                         size=root_path.stat().st_size,
                         mtime=datetime.fromtimestamp(root_path.stat().st_mtime).strftime("%Y-%m-%d %H:%M:%S"),
@@ -225,6 +226,7 @@ class PyBrowser(wx.Frame):
                         name=item.name,
                         path=item.absolute().as_posix(),
                         ext=item.suffix.lower(),
+                        mime=get_mimetype(item.name),
                         has_children=has_children,
                         size=item.stat().st_size,
                         mtime=datetime.fromtimestamp(item.stat().st_mtime).strftime("%Y-%m-%d %H:%M:%S"),
@@ -235,6 +237,7 @@ class PyBrowser(wx.Frame):
                         name=item.name,
                         path=item.absolute().as_posix(),
                         ext=item.suffix.lower(),
+                        mime=get_mimetype(item.name),
                         has_children=False,
                         size=item.stat().st_size,
                         mtime=datetime.fromtimestamp(item.stat().st_mtime).strftime("%Y-%m-%d %H:%M:%S"),
@@ -291,7 +294,7 @@ class PyBrowser(wx.Frame):
             self._state.path = path.absolute().as_posix()
             self._state.is_dir = True
             cur_url = self.getWebview(WidgetId.WIDGET_CONTENT).GetCurrentURL()
-            new_url = get_resource_path(f"widget_{ContentTemplate.CONTENT_GALLERY.value.lower()}.html").as_uri()
+            new_url = get_resource_path(f"{WidgetId.WIDGET_CONTENT.value.lower()}.html").as_uri()
             if cur_url != new_url:
                 self.getWebview(WidgetId.WIDGET_CONTENT).LoadURL(new_url)
             else:

@@ -40,3 +40,7 @@ def get_mimetype_head(name):
     if mime_type is None:
         return None
     return mime_type.split('/')[0]
+
+def get_mimetype(name):
+    mime_type, _ = mimetypes.guess_type(name)
+    return mime_type if mime_type is not None else ""
