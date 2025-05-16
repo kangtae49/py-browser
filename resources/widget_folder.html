@@ -6,109 +6,238 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Folder</title>
     <link rel="stylesheet" href="fontawesome/css/all.min.css">
+    <script src="zod-3.24.4.js"></script>
     <script src="py-browser.js"></script>
+    <script src="widget_folder.js"></script>
     <style>
       body { margin: 0; padding: 0; height: 100vh; display: flex;}
-      .container { padding:0; margin:0; }
-      .tree { padding: 0 0 0 0px; margin: 0; font-size: 0.9em}
-      .tree ul { padding: 0 0 0 10px; margin: 0;}
-      .tree li { list-style: none; cursor: pointer; padding: 0; white-space: nowrap;}
-      .fa-folder { color: #f4a261; margin-right: 5px;}
+      .container { padding:0; margin:0; font-size: 0.8em}
+      .tree { padding: 0 0 0 0px; margin: 0; }
+      .tree ul { padding: 0 0 0 8px; margin: 0;}
+      .tree li { list-style: none; padding: 0; margin:0; white-space: nowrap;}
+      .tree .item { padding: 0 3px 1px 3px; margin: 0; cursor: pointer; display: inline-block;}
+      .tree .selected {background-color: #bad0e4;}
+      .tree .item .subitem { padding: 0; margin: 0; display: inline-block;}
+      .fa-folder, .fa-folder-plus { color: #f4a261; margin-right: 5px;}
       .fa-folder-open { color: #f4a261; margin-right: 5px;}
       .fa-file { color: #2a9d8f; margin-right: 5px;}
-      .fa-file-code { color: #2a9d8f; margin-right: 5px;}  
+      .fa-file-code { color: #2a9d8f; margin-right: 5px;}
     </style>
     <script>
+      let g_select_path = null;
+      Pb.addListener((params) => {
+          const jres = JSON.parse(params);
+          const res = BaseMsg.parse(jres);
+          window[res.action.toLowerCase()](params);
+      });
+
+      on_load = (params) => {
+        const jres = JSON.parse(params);
+        console.log("on_load");
+        send_list_directory({path: null, is_root: true});
+      }
+      
+      list_directory = (params) => {
+        const jres = JSON.parse(params);
+        console.log("list_directory");
+        const res = FolderRes.parse(jres);
+        const tree_node = document.querySelector("#file-tree");
+
+        const parent_node = res.is_root ? tree_node : document.querySelector("li[data-path='" + encodeURIComponent(res.path) + "']");
+        if (res.is_root) {
+          tree_node.innerHTML = "";
+        } 
+        const ul = document.createElement("ul");
+        parent_node.appendChild(ul);
         
-        // document.addEventListener('DOMContentLoaded', function() {
-        // });
+        for (const item of res.items) {
+          const li = document.createElement("li");
+          if (item.is_dir) {
+            li.dataset.is_dir = "true";
+            li.dataset.expanded = "false";
+            li.dataset.has_children = item.has_children;
+            li.dataset.path = encodeURIComponent(item.path);
+            const div_item = document.createElement("div");
+            div_item.classList.add("item");
 
-        function onload_widget(){
-          call_list_directory();
-        }
-
-
-        function call_list_directory(parent=null) {
-          post_message({
-            action: "list_directory",
-            target: "widget_folder",
-            path: parent,
-            callback: "appendData",
-          });
-        }
-
-        function call_open_file(path) {
-          post_message({
-            target: "widget_content",
-            action: "open_file",
-            path: path,
-          });
-        }
-
-        function appendData(param) {
-          const res = JSON.parse(param);
-          let parent_node = document.querySelector("#file-tree");
-
-          if (res.parent == null) {
-            parent_node.innerHTML = "";
-          } else {
-            parent_node = document.querySelector("li[data-path='" + encodeURIComponent(res.parent) + "']");
-          }
-          const ul = document.createElement("ul");
-          parent_node.appendChild(ul);
-          
-          for (const item of res.data) {
-            const li = document.createElement("li");
-            if (item.is_folder) {
-              li.dataset.is_folder = "true";
-              li.dataset.expanded = "false";
-              li.dataset.path = encodeURIComponent(item.path);
-              li.innerHTML = `<i class="fa-solid fa-folder"></i><span>${item.name}</span>`;
-              li.addEventListener("click", function(event) {
-                event.stopPropagation();
-                const isExpanded = li.dataset.expanded === "true";
-                li.dataset.expanded = !isExpanded;
-                if (isExpanded) {
-                  li.querySelector("ul").remove();
-                } else {
-                  call_list_directory(item.path);
-                }
-              });
-            } else {
-              li.innerHTML = `<i class="fa-solid fa-file-code"></i><span>${item.name}</span>`;
-              li.addEventListener("click", function(event) {
-                event.stopPropagation();
-                call_open_file(item.path);
-              });
+            let icon = item.has_children ? "fa-folder-plus": "fa-folder"
+            div_item.innerHTML = `
+              <div class="subitem path-icon">
+                <i class="fa-solid ${icon}"></i>
+              </div>
+              <div class="subitem path-name">
+              </div>
+            `
+            const div_path_icon = div_item.querySelector(".path-icon");
+            const div_path_name = div_item.querySelector(".path-name");
+            div_path_name.title = item.path;
+            div_path_name.innerHTML = item.name;
+            if (res.is_root) {
+              div_item.classList.add("selected");
             }
-            ul.appendChild(li);
+            li.appendChild(div_item);
+
+            div_path_icon.addEventListener("click", toggle_folder);
+            div_path_name.addEventListener("click", click_open_path);
+            
+          } else {
+            li.dataset.path = encodeURIComponent(item.path);
+            const div_item = document.createElement("div");
+            div_item.classList.add("item");
+            
+            div_item.innerHTML = `
+              <div class="subitem path-icon">
+                <i class="fa-solid fa-file-code"></i>
+              </div>
+              <div class="subitem path-name">
+              </div>              
+            `
+            const div_path_icon = div_item.querySelector(".path-icon");
+            const div_path_name = div_item.querySelector(".path-name");
+            div_path_name.title = item.path;
+            div_path_name.innerHTML = item.name;
+
+            li.appendChild(div_item);
+
+            div_path_icon.addEventListener("click", click_open_path);
+            div_path_name.addEventListener("click", click_open_path);
           }
+          ul.appendChild(li);
         }
 
+        if (res.select_path){
+          setTimeout(() => {
+            go_path(res);
+          }, 1);
+        }
+      }
+
+      const go_path = (res) => {
+        if (res.path == res.select_path){
+          const li = document.querySelector("li[data-path='" + encodeURIComponent(res.select_path) + "']");
+          if (li.dataset.expanded == "true"){
+            return;
+          }
+          document.querySelectorAll(".tree li>div").forEach(el => {
+            el.classList.remove("selected");
+          });
+          
+          li.dataset.expanded = "true";
+          const div_item = li.querySelector("div");
+          div_item.classList.add("selected")
+          send_list_directory({path: res.path, is_root: false})
+          send_open_path({path: res.path});
+
+        } else {
+          const arr_path = res.path.split("/").filter((x) => x);
+          const arr_select_path = res.select_path.split("/").filter((x) => x);
+          if (res.is_root){
+            send_list_directory({path: res.path, is_root: false, select_path: res.select_path})
+          } else {
+            const next_path = arr_select_path.slice(0, arr_path.length+1).join("/");
+            send_list_directory({path: next_path, is_root: false, select_path: res.select_path})
+          }
+        }
+        document.querySelector(".selected").scrollIntoView({ behavior: 'auto', block: 'nearest', inline: 'end' });
+      }
+
+      const click_open_path = (event) => {
+        const li = event.currentTarget.parentElement.parentElement;
+        const div_item = event.currentTarget.parentElement;
+        const path = decodeURIComponent(li.dataset.path);
+
+        document.querySelectorAll(".tree li div").forEach(el => {
+          el.classList.remove("selected");
+        });
+        div_item.classList.add("selected")
+        send_open_path({path: path});
+      }
+
+      const toggle_folder = (event) => {
+        const li = event.currentTarget.parentElement.parentElement;
+        const div_item = event.currentTarget.parentElement;
+        const path = decodeURIComponent(li.dataset.path);
+
+        document.querySelectorAll(".tree li>div").forEach(el => {
+          el.classList.remove("selected");
+        });
+        div_item.classList.add("selected")
+        isExpanded = li.dataset.expanded === "true";
+        li.dataset.expanded = !isExpanded;
+        if (isExpanded) {
+          li.querySelectorAll("ul").forEach(ul => ul.remove());
+        } else {
+          send_list_directory({path: path, is_root: false, select_path: g_select_path});
+        }
+      }
+
+
+      window.addEventListener("keydown", function(event) {
+        const keys = ["Enter", "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", " "]
+        if(keys.includes(event.key)){
+          event.stopPropagation();
+          event.preventDefault();
+        } else {
+          return;
+        }
+        const div_item = document.querySelector(".selected");
+        const div_path_icon = div_item.querySelector(".path-icon");
+        const div_path_name = div_item.querySelector(".path-name");
+        const li = div_item.parentElement;
+        
+
+        if (event.key === "Enter") {
+          if (li.dataset.is_dir){
+            div_path_icon.click();
+          } else {
+            div_path_name.click();
+          }
+        } else if(event.key === "ArrowUp") {
+          const arr = Array.from(document.querySelectorAll("div.item"));
+          const idx = arr.indexOf(div_item);
+          const prev_idx = Math.max(idx-1, 0);
+          if(idx != prev_idx){
+            arr[idx].classList.remove("selected");
+            arr[prev_idx].classList.add("selected");
+          }
+        } else if(event.key === "ArrowDown") {
+          const arr = Array.from(document.querySelectorAll("div.item"));
+          const idx = arr.indexOf(div_item);
+          const next_idx = Math.min(idx+1, arr.length-1);
+          if(idx != next_idx){
+            arr[idx].classList.remove("selected");
+            arr[next_idx].classList.add("selected");
+            arr[next_idx].focus();
+          }
+        } else if(event.key === "ArrowLeft") {
+          const parent_li = li.parentElement.parentElement;
+          const parent_path_icon = parent_li.querySelector(".path-icon");
+          if (li.dataset.is_dir && li.dataset.expanded == "true") {
+            div_path_icon.click();
+          } else {
+            parent_path_icon.click();
+          }
+          // if(parent_path_icon){
+          //   parent_path_icon.click();
+          // }
+        } else if(event.key === "ArrowRight") {
+          if (li.dataset.is_dir){
+            div_path_icon.click();
+          } else {
+            div_path_name.click();
+          }
+        } else if(event.key === " "){
+          div_path_name.click();
+        }
+
+        document.querySelector(".selected").scrollIntoView({ behavior: 'auto', block: 'nearest', inline: 'end' });
+      });
     </script>
   </head>
 
   <body>
   <div class="container">
     <div id="file-tree" class="tree">
-      <!--
-      <ul class="tree">
-        <li class="folder">
-          <i class="fa-solid fa-folder"></i><span>Folder 1</span>
-          <ul>
-            <li>
-              <i class="fa-solid fa-folder"></i><span>Folder 2</span>
-              <ul>
-                <li><i class="fa-solid fa-file-code"></i><span>File 1</span></li>
-                <li><i class="fa-solid fa-file-code"></i><span>File 2</span></li>
-              </ul>
-            </li>
-            <li><i class="fa-solid fa-file-code"></i><span>File 1</span></li>
-            <li><i class="fa-solid fa-file-code"></i><span>File 2</span></li>
-          </ul>
-        </li>
-      </ul>
-      -->
     </div>
   </div>
   </body>
