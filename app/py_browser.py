@@ -1,4 +1,5 @@
 import os
+import mimetypes
 import wx
 from dataclasses import dataclass
 from pathlib import Path
@@ -6,8 +7,8 @@ from datetime import datetime
 import wx.aui as aui
 from wx.html2 import WebView 
 
-from app.utils.file_utils import get_default_root_path, get_resource_path
-from app.enums import WidgetId, ContentTemplate, GalleryType, StateKey
+from app.utils.file_utils import get_default_root_path, get_resource_path, get_mimetype_head
+from app.enums import WidgetId, ContentTemplate, GalleryType, StateKey, OpenPathType
 from app.models import createFolderReq
 from app.models import BaseMsg
 from app.models import FolderReq, FolderRes, PathItem
@@ -17,6 +18,9 @@ from app.models import OpenPathReq, OpenPathRes
 from app.widgets.widget_folder import WidgetFolder
 from app.widgets.widget_content import WidgetContent
 from app.widgets.widget_base import WidgetBase
+
+
+
 
 @dataclass
 class State:
@@ -140,14 +144,15 @@ class PyBrowser(wx.Frame):
 
     def runScriptAsync(self, res: BaseMsg):
         script = f"Pb.listener({repr(res.model_dump_json())})"
-        print(script)
-        self.getWebview(res.receiver_id).RunScriptAsync(script)
+        print(f"runScriptAsync: {script}")
+        # https://docs.wxpython.org/wx.html2.WebView.html#wx.html2.WebView.RunScriptAsync
+        self.getWebview(res.receiver_id).RunScriptAsync(javascript=script)
         
 
     def _on_message_received(self, event):
         param = event.GetString()
+        print(f"_on_message_received: {param}")
         base_msg: BaseMsg = BaseMsg.model_validate_json(param)
-        print(f"_on_message_received: {base_msg.action.value.lower()}")
         func = getattr(self, f"{base_msg.action.value.lower()}")
         if func:
             func(param)
@@ -161,10 +166,20 @@ class PyBrowser(wx.Frame):
             req = FolderReq.model_validate_json(param)
         else:
             req = param
+        root_path = None
+        
         if req.path is None:
             root_path = self.getWidget(WidgetId.WIDGET_FOLDER).get_root_path()
         else:
             root_path = Path(req.path)
+
+        select_path = None
+        if req.select_path is not None:
+            select_path = Path(req.select_path)
+        else:
+            select_path = req.select_path
+
+            
         # print(req)
         if req.is_root:
             res = FolderRes(
@@ -172,12 +187,14 @@ class PyBrowser(wx.Frame):
                 receiver_id=req.receiver_id,
                 action=req.action,
                 path=root_path.absolute().as_posix(),
+                select_path=select_path.absolute().as_posix() if select_path is not None else None,
                 is_root=True,
                 items=[
                     PathItem(
-                        is_folder=True,
+                        is_dir=True,
                         name=root_path.name or root_path.absolute().as_posix(),
                         path=root_path.absolute().as_posix(),
+                        ext=root_path.suffix.lower(),
                         has_children=True,
                         size=root_path.stat().st_size,
                         mtime=datetime.fromtimestamp(root_path.stat().st_mtime).strftime("%Y-%m-%d %H:%M:%S"),
@@ -204,18 +221,20 @@ class PyBrowser(wx.Frame):
                     except:
                         continue
                     items.append(PathItem(
-                        is_folder=True,
+                        is_dir=True,
                         name=item.name,
                         path=item.absolute().as_posix(),
+                        ext=item.suffix.lower(),
                         has_children=has_children,
                         size=item.stat().st_size,
                         mtime=datetime.fromtimestamp(item.stat().st_mtime).strftime("%Y-%m-%d %H:%M:%S"),
                     ))
                 else:
                     items.append(PathItem(
-                        is_folder=False,
+                        is_dir=False,
                         name=item.name,
                         path=item.absolute().as_posix(),
+                        ext=item.suffix.lower(),
                         has_children=False,
                         size=item.stat().st_size,
                         mtime=datetime.fromtimestamp(item.stat().st_mtime).strftime("%Y-%m-%d %H:%M:%S"),
@@ -225,6 +244,7 @@ class PyBrowser(wx.Frame):
                 receiver_id=req.receiver_id,
                 action=req.action,
                 path=root_path.resolve().as_posix(),
+                select_path=select_path.resolve().as_posix() if select_path is not None else None,
                 is_root=req.is_root,
                 items=items
             )
@@ -240,47 +260,49 @@ class PyBrowser(wx.Frame):
 
         path = Path(req.path)
 
-        # self.log(f"{path}: {path.suffix}")
-        # openable_suffix = {
-        #     ".html", ".htm", ".mht", ".mhtml", ".txt", ".pdf",
-        #     ".odt", ".ods", ".odp", ".csv", ".tsv", ".json", ".xml",
-        #     ".md", ".rtf", ".epub", 
-        #     ".js", ".cpp", ".c", ".py", ".rs", ".hs", ".jsp", ".sh", ".bat", ".ps1",
-        #     ".php", ".asp", "jsp"
-        #     ".ini", ".ipynb", ".kml", ".cif", ".pdb", ".xyz",
-        #     ".reg", ".toml", ".gitignore", ".cfg", ".log",
-        #     ".bmp", ".jpg", ".jpeg", ".png", ".gif", ".svg", 
-        #     ".webp", ".ico", ".otf",
-        #     ".mp3", ".mp4", ".webm", ".ogg", ".ogv", ".mov", ".avi", ".wmv", ".flv",
-        #     ".wav", ".m4a", ".wma",
-        # }
-        # if path.suffix.lower() in openable_suffix:
-        # wx.LaunchDefaultApplication(str(path.absolute()))
-        # wx.LaunchDefaultBrowser(str(path.absolute()))
+        if req.open_path_type == OpenPathType.BROWSER:
+            wx.LaunchDefaultBrowser(str(path.absolute()))
+            return
+        elif req.open_path_type == OpenPathType.APPLICATION:
+            wx.LaunchDefaultApplication(str(path.absolute()))
+            return
+        elif req.open_path_type == OpenPathType.WEBVIEW:
+            self.getWebview(WidgetId.WIDGET_CONTENT).LoadURL(str(path.absolute()))
+            return
+        elif req.open_path_type == OpenPathType.AUTO:
+            pass
 
+        # OpenPathType.AUTO
         if path.is_file():
-            exclude_suffix = {
-                ".exe", ".lnk", ".com",
-            }
-            if path.suffix.lower() not in exclude_suffix:
+            ext = path.suffix.lower()
+            if get_mimetype_head(path.name) in {"image", "text", "audio", "video"} or ext in {".pdf", ".md", ".toml"}: 
                 self.SetTitle(f"PyBrowser - {path.absolute().as_posix()}")
                 self._state.path = path.absolute().as_posix()
                 self._state.is_dir = False
                 self.getWebview(WidgetId.WIDGET_CONTENT).LoadURL(path.as_uri())
+                return
+            else:
+                self.getWebview(WidgetId.WIDGET_CONTENT).LoadURL("about:blank")
+            # else:
+            #     wx.LaunchDefaultApplication(str(path.absolute()))
 
         elif path.is_dir():
             self.SetTitle(f"PyBrowser - {path.absolute().as_posix()}")
             self._state.path = path.absolute().as_posix()
             self._state.is_dir = True
-            self.getWebview(WidgetId.WIDGET_CONTENT).LoadURL(get_resource_path(f"widget_{ContentTemplate.CONTENT_GALLERY.value.lower()}.html").as_uri())
-
-            res = OpenPathRes(
-                sender_id=req.sender_id,
-                receiver_id=req.receiver_id,
-                action=req.action,
-                path=req.path,
-            )
-            self.runScriptAsync(res)
+            cur_url = self.getWebview(WidgetId.WIDGET_CONTENT).GetCurrentURL()
+            new_url = get_resource_path(f"widget_{ContentTemplate.CONTENT_GALLERY.value.lower()}.html").as_uri()
+            if cur_url != new_url:
+                self.getWebview(WidgetId.WIDGET_CONTENT).LoadURL(new_url)
+            else:
+                res = OpenPathRes(
+                    sender_id=req.sender_id,
+                    receiver_id=WidgetId.WIDGET_CONTENT,
+                    action=req.action,
+                    open_path_type=req.open_path_type,
+                    path=req.path,
+                )
+                self.runScriptAsync(res)
 
 
     def get_state(self, param: str | GetStateReq):

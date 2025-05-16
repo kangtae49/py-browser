@@ -1,6 +1,6 @@
 from pydantic import BaseModel
 from typing import List
-from app.enums import WidgetId, ActionId, StateKey, ContentTemplate, GalleryType
+from app.enums import WidgetId, ActionId, StateKey, ContentTemplate, GalleryType, OpenPathType
 
 
 class BaseMsg(BaseModel):
@@ -11,18 +11,22 @@ class BaseMsg(BaseModel):
 
 class FolderReq(BaseMsg):
     path: str | None = None
+    select_path: str | None = None
     is_root: bool
 
 class OpenPathReq(BaseMsg):
+    open_path_type: OpenPathType = OpenPathType.AUTO
     path: str
 
 class OpenPathRes(BaseMsg):
+    open_path_type: OpenPathType
     path: str
 
 class PathItem(BaseModel):
-    is_folder: bool
+    is_dir: bool
     name: str
     path: str
+    ext: str
     has_children: bool = False
     mtime: str
     size: int
@@ -30,6 +34,7 @@ class PathItem(BaseModel):
 
 class FolderRes(BaseMsg):
     path: str | None = None
+    select_path: str | None = None
     is_root: bool
     items: List[PathItem]
 
@@ -56,6 +61,7 @@ def createFolderReq (
         receiver_id=WidgetId.WIDGET_FOLDER,
         action=ActionId.LIST_DIRECTORY,
         path=None,
+        select_path=None,
         is_root=True
     ):
     return FolderReq(
@@ -63,5 +69,6 @@ def createFolderReq (
         receiver_id=WidgetId.WIDGET_FOLDER,
         action=ActionId.LIST_DIRECTORY,
         path=path,
+        select_path=select_path,
         is_root=True,
     )

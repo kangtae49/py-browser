@@ -7,6 +7,12 @@ class ContentTemplate(Enum):
 class FolderTemplate(Enum):
     FOLDER = "FOLDER"  # "widget_folder.html"
 
+class OpenPathType(Enum):
+    AUTO = "AUTO"
+    WEBVIEW = "WEBVIEW"
+    APPLICATION = "APPLICATION"
+    BROWSER = "BROWSER"
+
 class GalleryType(Enum):
     LAYOUT_LIST = "LAYOUT_LIST"
     LAYOUT_GALLERY = "LAYOUT_GALLERY"
@@ -15,7 +21,6 @@ class StateKey(Enum):
     TEMPLATE = "TEMPLATE"
     GALLERY_TYPE = "GALLERY_TYPE"
     PATH = "PATH"
-
 
 class WidgetId(Enum):
     PY_BROWSER = "PY_BROWSER"

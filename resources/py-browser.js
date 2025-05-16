@@ -9,6 +9,13 @@ const FolderTemplate = z.enum([
     "FOLDER",
 ]);
 
+const OpenPathType = z.enum([
+    "AUTO",
+    "WEBVIEW",
+    "APPLICATION",
+    "BROWSER",
+]);
+
 const GalleryType = z.enum([
     "LAYOUT_LIST",
     "LAYOUT_GALLERY"
@@ -45,21 +52,25 @@ const BaseMsg = z.object({
 
 const FolderReq = BaseMsg.extend({
     path: z.string().nullable(),
+    select_path: z.string().nullable(),
     is_root: z.boolean(),
 });
 
 const OpenPathReq = BaseMsg.extend({
+    open_path_type: OpenPathType.default(OpenPathType.enum.AUTO),
     path: z.string(),
 });
 
 const OpenPathRes = BaseMsg.extend({
+    open_path_type: OpenPathType.default(OpenPathType.enum.AUTO),
     path: z.string(),
 });
 
 const PathItem = z.object({
-    is_folder: z.boolean(),
+    is_dir: z.boolean(),
     name: z.string(),
     path: z.string(),
+    ext: z.string(),
     has_children: z.boolean().default(false),
     mtime: z.string(),
     size: z.number().int(),
@@ -67,6 +78,7 @@ const PathItem = z.object({
 
 const FolderRes = BaseMsg.extend({
     path: z.string().nullable(),
+    select_path: z.string().nullable(),
     is_root: z.boolean(),
     items: z.array(PathItem),
 });
@@ -80,12 +92,12 @@ const GetStateRes = BaseMsg.extend({
     value: z.union([ContentTemplate, GalleryType, z.string()])
 });
 
-const SetGalleryTypeReq = BaseMsg.extend({
+const SetStateReq = BaseMsg.extend({
     key: StateKey,
     value: z.union([ContentTemplate, GalleryType, z.string()])
 });
 
-const SetGalleryTypeRes = BaseMsg.extend({
+const SetStateRes = BaseMsg.extend({
     key: StateKey,
     value: z.union([ContentTemplate, GalleryType, z.string()])
 });

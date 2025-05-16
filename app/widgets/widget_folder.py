@@ -1,6 +1,6 @@
 from pathlib import Path
 import wx
-from wx.html2 import WebView
+from wx.html2 import WebView, WebViewEvent
 from app.utils.file_utils import get_default_root_path, get_resource_path
 from app.models import BaseMsg
 from app.models import WidgetId
@@ -43,7 +43,8 @@ class WidgetFolder(wx.Panel, WidgetBase, metaclass=WidgetMeta):
             action=ActionId.ON_LOAD,
         ))
     
-    def on_script_result(self, event):
+    def on_script_result(self, event: WebViewEvent):
+        # https://docs.wxpython.org/wx.html2.WebViewEvent.html#wx.html2.WebViewEvent
         if event.IsError():
             print("err(WidgetFolder):", event.GetString())
 

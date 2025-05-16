@@ -1,5 +1,5 @@
 import wx
-from wx.html2 import WebView
+from wx.html2 import WebView, WebViewEvent
 from app.utils.file_utils import get_resource_path
 from app.models import WidgetId, BaseMsg
 from app.enums import ActionId, ContentTemplate
@@ -32,6 +32,8 @@ class WidgetContent(wx.Panel, WidgetBase, metaclass=WidgetMeta):
         return self
     
     def _on_load(self, event):
+        if self._webview.GetCurrentURL() == 'about:blank':
+            return
         if self._browser._state.is_dir:
             self._browser.runScriptAsync(BaseMsg(
                 sender_id=self._widget_id,
@@ -39,7 +41,8 @@ class WidgetContent(wx.Panel, WidgetBase, metaclass=WidgetMeta):
                 action=ActionId.ON_LOAD,
             ))
 
-    def on_script_result(self, event):
+    def on_script_result(self, event: WebViewEvent):
+        # https://docs.wxpython.org/wx.html2.WebViewEvent.html#wx.html2.WebViewEvent
         if event.IsError():
             print("err(WidgetContent):", event.GetString())
 

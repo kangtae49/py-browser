@@ -2,6 +2,7 @@ import sys
 import ctypes
 from pathlib import Path
 from typing import Union
+import mimetypes
 
 def get_default_root_path() -> Path:
     root_path = Path(".")
@@ -32,3 +33,10 @@ def is_hidden(path: Path) -> bool:
         return bool(attrs & 2)
     except Exception:
         return False
+
+
+def get_mimetype_head(name):
+    mime_type, _ = mimetypes.guess_type(name)
+    if mime_type is None:
+        return None
+    return mime_type.split('/')[0]

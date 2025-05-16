@@ -1,325 +1,500 @@
 <!doctype html>
-	<html lang="en">
-		<head>
-			<meta http-equiv="Content-Security-Policy" content="default-src * 'unsafe-inline' 'unsafe-eval' data: blob:;">
-			<meta charset="UTF-8" />
-			<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-			<title>Folder</title>
-			<link rel="stylesheet" href="fontawesome/css/all.min.css">
-			<script src="zod-3.24.4.js"></script>
-			<script src="py-browser.js"></script>
-			<script src="widget_content_gallery.js"></script>
+<html lang="en">
 
-			<script src="resources/fontawesome/js/all.min.js"></script>
-			<style>
-				body { margin: 0; padding: 0; height: 100vh; }
-				.container { padding: 0; margin: 0; font-size: 0.8em }
-				.top-bar { position: fixed; top: 0px; padding-top: 10px; width: 100%; background-color:white;}
+<head>
+  <meta http-equiv="Content-Security-Policy" content="default-src * 'unsafe-inline' 'unsafe-eval' data: blob:;">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Folder</title>
+  <link rel="stylesheet" href="fontawesome/css/all.min.css">
+  <script src="zod-3.24.4.js"></script>
+  <script src="py-browser.js"></script>
+  <script src="widget_content.js"></script>
 
-				.slider-container { width: 100%; height: 25px; }
-				.slider { width: 100%; height: 2px; }
-				.ext-container { display: flex; justify-content: space-between; }
-				.ext-container .ext-sub { display: flex; }
-				.ext-container .ext-sub .ext { padding-left: 5px; }
-				
-				.gallery { display: flex; flex-wrap: wrap; gap: 5px; padding-top: 50px; }
-				.gallery .media { width: 20%; }
-				.gallery .media * { width: 100%; height: 100%; object-fit: scale-down; /* object-fit: contain; */ }
-				.gallery .media .file { width: 100%; height: 100%; overflow: hidden; text-overflow: ellipsis; }
+  <script src="resources/fontawesome/js/all.min.js"></script>
+  <style>
+    body { margin: 0; padding: 0; height: 100vh; }
+    .container { padding: 0; margin: 0; font-size: 0.8em }
+    .top-bar { position: fixed; top: 0px; padding-top: 10px; width: 100%; background-color: white; }
+    .slider-container { width: 100%; height: 25px; }
+    .slider { width: 100%; height: 2px; }
+    .ext-container { display: flex; justify-content: space-between; }
+    .ext-container .ext-sub { display: flex; }
+    .ext-container .ext-sub .ext { padding: 0 2px 0 2px; cursor: pointer;}
+    .ext-container .ext-sub .ext[class*="on"] i { color: #2a9d8f; }
+    .ext-container .ext-sub .ext i { color: #d4c5ba; }    
+    .gallery { display: flex; flex-wrap: wrap; gap: 5px; padding-top: 50px; }
+    .gallery .media { width: 20%; }
+    .gallery .media * { width: 100%; height: 100%; object-fit: scale-down; /* object-fit: contain; */ }
+    .gallery .media .file { width: 100%; height: 100%; overflow: hidden; text-overflow: ellipsis; }
+    .fileheader { padding: 2px 5px 2px 5px; background-color: #f0f0f0; font-weight: bold;  }
+    .filelist { padding: 75px 5px 0 5px; }
+    .file-table { display: flex; flex-direction: column;  font-family: sans-serif; }
+    .file-header, .file-row { display: flex; }
+    .file-row:hover {background-color: #bad0e4;}
+    .file-row .i-file {cursor: pointer;}
+    .cell.cur-dir {cursor: pointer; display: inline-block;}
+    .cell.cur-dir .dir-all {display: inline-block;}
+    .cell.cur-dir .dir-part {display: inline-block; cursor: pointer;}
+    .cell.cur-dir .dir-part:hover { background-color: #bad0e4;}
+    .dir-browser {display: inline-block; cursor:pointer; color: #1e3050;}
+    .cell { padding: 0; box-sizing: border-box; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;}
+    .cell.file { flex: 1; text-align: left; }
+    .cell.browser { flex: 0 0 16px; text-align: center; cursor:pointer; color: #1e3050;}
+    .cell.size { flex: 0 0 80px; text-align: right;}
+    .cell.ext { flex: 0 0 50px; text-align: center;}
+    .cell.date { flex: 0 0 120px; text-align: right;}
+    .fa-folder { color: #f4a261; margin-right: 5px; }
+    .fa-folder-open { color: #f4a261; margin-right: 5px; }
+    .fa-folder-plus { color: #f4a261; margin-right: 5px; }
+    .fa-file { color: #2a9d8f; margin-right: 5px; }
+    .fa-file-code { color: #2a9d8f; margin-right: 5px; }
+    .fa-images { color: #2a9d8f; margin-right: 5px; }
+    .fa-video { color: #2a9d8f; margin-right: 5px; }
+    .fa-volume-high { color: #2a9d8f; margin-right: 5px; }
+    .fa-ellipsis { color: #2a9d8f; margin-right: 5px; }
+    .fa-list { color: #2a9d8f;}
+    .fa-table-cells { color: #2a9d8f; }
+  </style>
+  <script>
+    let g_gallery_type = null;
+    let g_path = null;
+    Pb.addListener((params) => {
+      const jres = JSON.parse(params);
+      const res = BaseMsg.parse(jres);
+      window[res.action.toLowerCase()](params);
+    });
 
-				.filelist {padding: 95px 0 0 0;}
+    on_load = (params) => {
+      const jres = JSON.parse(params);
+      console.log("on_load");
+      send_get_state({ key: StateKey.enum.GALLERY_TYPE });
+      send_get_state({ key: StateKey.enum.PATH });
+      send_list_directory({ path: null, is_root: true });
+      document.querySelector(".layout-list").addEventListener("click", click_layout_list);
+      document.querySelector(".layout-gallery").addEventListener("click", click_layout_gallery);
+    }
 
-				.file-table {
-						display: flex;
-						flex-direction: column;
-						border: 1px solid #ccc;
-						font-family: sans-serif;
-				}
+    list_directory = (params) => {
+      console.log("list_directory");
+      const jres = JSON.parse(params);
+      const res = FolderRes.parse(jres);
 
-				.file-header, .file-row {
-						display: flex;
-				}
+      const cur_dir_icon = document.querySelector(".cur-dir i");
+      cur_dir_icon.dataset.path = res.path;
 
-				.file-header {
-						background-color: #f0f0f0;
-						font-weight: bold;
-						}
-
-				.cell {
-						flex: 5;
-						padding: 8px 12px;
-						border-bottom: 1px solid #ddd;
-						box-sizing: border-box;
-						overflow: hidden;
-						text-overflow: ellipsis;
-						white-space: nowrap;
-				}
-				.file-cell {
-						flex: 20;
-						padding: 8px 12px;
-						border-bottom: 1px solid #ddd;
-						box-sizing: border-box;
-						overflow: hidden;
-						text-overflow: ellipsis;
-						white-space: nowrap;
-				}
-
-				.fa-folder { color: #f4a261; margin-right: 5px;}
-				.fa-folder-open { color: #f4a261; margin-right: 5px;}
-				.fa-file { color: #2a9d8f; margin-right: 5px;}
-				.fa-file-code { color: #2a9d8f; margin-right: 5px;}  
-				
-				.fa-file-code { color: #2a9d8f; margin-right: 5px;}  
-				.fa-images { color: #2a9d8f; margin-right: 5px;}  
-				.fa-video { color: #2a9d8f; margin-right: 5px;}  
-				.fa-volume-high { color: #2a9d8f; margin-right: 5px;}  
-				.fa-ellipsis { color: #2a9d8f; margin-right: 5px;}  
-
-				.fa-list { color: #2a9d8f; margin-right: 5px;}  
-				.fa-table-cells { color: #2a9d8f; margin-right: 5px;}  
-					
-			</style>
-		<script>
-			let g_gallery_type = null;
-			let g_path = null;
-      Pb.addListener((params) => {
-          const jres = JSON.parse(params);
-          const res = BaseMsg.parse(jres);
-          window[res.action.toLowerCase()](params);
+      const cur_dir_browser = document.querySelector(".cur-dir .dir-browser");
+      cur_dir_browser.dataset.path = res.path;
+      cur_dir_browser.addEventListener("click", (event) => {
+        window.getSelection().removeAllRanges();
+        const target = event.currentTarget;
+        const item = target.dataset;
+        send_open_path({ path: item.path, open_path_type: OpenPathType.enum.BROWSER });
       });
 
-      on_load = (params) => {
-        const jres = JSON.parse(params);
-        console.log("on_load");
-				send_get_state({key: StateKey.enum.GALLERY_TYPE});
-				send_get_state({key: StateKey.enum.PATH});
-        send_list_directory({path: null, is_root: true});
+      const cur_dir_all = document.querySelector(".cur-dir .dir-all");
+      const arr_dir = res.path.split("/").filter((x) => x);
+      cur_dir_all.innerHTML = "";
+      for(i=0; i<arr_dir.length; i++) {
+        let dir_sub = arr_dir.slice(0, i+1).join("/");
+        if (!dir_sub.endsWith("/")){
+          dir_sub += "/"; 
+        }
+        const div_part = document.createElement("div");
+        div_part.classList.add("dir-part");
+        div_part.dataset.dir_sub = dir_sub;
+        div_part.dataset.path = res.path;
+        div_part.innerHTML = arr_dir[i];
+        div_part.addEventListener("click", (event) => {
+          const dir_sub = event.currentTarget.dataset.dir_sub;
+          const root_path = event.currentTarget.dataset.path.split("/")[0] + "/";
+          send_list_directory({path: root_path, select_path: dir_sub, is_root: true, receiver_id: WidgetId.enum.WIDGET_FOLDER});
+        });
+        cur_dir_all.appendChild(div_part);
+        cur_dir_all.append("/");
+      }
+      cur_dir_icon.addEventListener("click", (event) => {
+        const root_path = event.currentTarget.dataset.path.split("/")[0] + "/";
+        send_list_directory({path: root_path, select_path: root_path, is_root: true, receiver_id: WidgetId.enum.WIDGET_FOLDER});
+      });
+
+
+      const div_file_table = document.querySelector(".filelist .file-table");
+      div_file_table.innerHTML = "";
+      for (const item of res.items) {
+        let icon = "fa-file";
+        if (item.is_dir && item.has_children){
+          icon = "fa-folder-plus";
+        } else if (item.is_dir && !item.has_children) {
+          icon = "fa-folder";
+        } else {
+          icon = "fa-file";
+        }
+        const div_row = document.createElement("div");
+        div_row.classList.add("file-row");
+        div_row.dataset.path = item.path;
+        div_row.dataset.is_dir = item.is_dir;
+        // div_row.dataset.has_children = item.has_children;
+        div_row.innerHTML = `
+          <div class="cell file">
+            <span class="i-file">
+              <span class="icon"><i class="fa-solid ${icon}"></i><span>
+              <span class="filename"></span>
+            </span>
+          </div>
+          <div class="cell browser"><i class="fa-solid fa-globe"></i></div>
+          <div class="cell size"></div>
+          <div class="cell ext">${item.ext}</div>
+          <div class="cell date">${item.mtime}</div>
+        `
+        const div_i_file = div_row.querySelector(".i-file");
+        const div_filename = div_row.querySelector(".filename");
+        const div_size = div_row.querySelector(".cell.size");
+        const div_browser = div_row.querySelector(".cell.browser");
+        div_size.innerHTML = formatFileSize(item.size);
+        div_size.title = item.size;
+        div_filename.innerHTML = item.name;
+        div_i_file.title = item.name;
+        div_i_file.addEventListener("dblclick", click_path);
+        div_browser.addEventListener("click", click_browser);
+
+        div_file_table.appendChild(div_row);
       }
 
-			list_directory = (params) => {
-        console.log("list_directory");
-        const jres = JSON.parse(params);
-				const res = FolderRes.parse(jres);
-			}
+    }
 
-			get_state = (params) => {
-        console.log("get_state");
-        const jres = JSON.parse(params);
-				const res = GetStateRes.parse(jres);
-				console.log(res.value);
-				if (res.key == StateKey.enum.PATH) {
-					g_path = res.value;
-				} else if (res.key == StateKey.enum.GALLERY_TYPE) {
-					g_gallery_type = res.value;
-				}
-			}
+    get_state = (params) => {
+      const jres = JSON.parse(params);
+      const res = GetStateRes.parse(jres);
+      console.log("get_state:", res.value);
+      if (res.key == StateKey.enum.PATH) {
+        g_path = res.value;
+        send_list_directory({ path: g_path, is_root: false });
+      } else if (res.key == StateKey.enum.GALLERY_TYPE) {
+        g_gallery_type = res.value;
+        change_layout();
+      }
+    }
 
+    set_state = (params) => {
+      const jres = JSON.parse(params);
+      const res = SetStateRes.parse(jres);
+      console.log("set_state:", res.value);
+      if (res.key == StateKey.enum.PATH) {
+        g_path = res.value;
+      } else if (res.key == StateKey.enum.GALLERY_TYPE) {
+        g_gallery_type = res.value;
+        change_layout();
+      }
+    }
 
-      </script>
-    </head>
-    <body>
-        <div class="container">
-            <div class="top-bar">
-                <div class="ext-container">
-                    <div class="ext-sub">
-                        <div class="ext"><i class="fa-solid fa-folder"></i></div>
-                        <div class="ext"><i class="fa-solid fa-file"></i></div>
-                        <div class="ext"><i class="fa-solid fa-images"></i></div>
-                        <div class="ext"><i class="fa-solid fa-video"></i></div>
-                        <div class="ext"><i class="fa-solid fa-volume-high"></i></div>
-                        <div class="ext"><i class="fa-solid fa-ellipsis"></i></div>
-                    </div>
-                    <div class="ext-sub">
-                        <div class="ext"><i class="fa-solid fa-list"></i></div>
-                        <div class="ext"><i class="fa-solid fa-table-cells"></i></i></div>
-                    </div>
-                    <!--
+    change_layout = () => {
+      if(g_gallery_type == GalleryType.enum.LAYOUT_LIST) {
+        document.querySelector(".layout-list").classList.add("on");
+        document.querySelector(".layout-gallery").classList.remove("on");
+      } else {
+        document.querySelector(".layout-list").classList.remove("on");
+        document.querySelector(".layout-gallery").classList.add("on");
+      }
+    }
+
+    open_path = (params) => {
+      console.log("open_path");
+      const jres = JSON.parse(params);
+      const res = OpenPathRes.parse(jres);
+      send_list_directory({ path: res.path, is_root: false });
+    }
+    
+    click_path = (event) => {
+      window.getSelection().removeAllRanges();
+      const target = event.currentTarget;
+      const div_row = target.parentElement.parentElement;
+      const item = div_row.dataset;
+      if (item.is_dir == "true"){
+        send_list_directory({ path: item.path});
+      } else {
+        send_open_path({ path: item.path, open_path_type: OpenPathType.enum.APPLICATION });
+      }
+    }
+
+    click_browser = (event) => {
+      window.getSelection().removeAllRanges();
+      const target = event.currentTarget;
+      const div_row = target.parentElement;
+      const item = div_row.dataset;
+      send_open_path({ path: item.path, open_path_type: OpenPathType.enum.BROWSER });
+    }
+
+    click_layout_list = (event) => {
+      console.log("click .layout-list");
+      if (g_gallery_type != GalleryType.enum.LAYOUT_LIST) {
+        send_set_state({key: StateKey.enum.GALLERY_TYPE, value: GalleryType.enum.LAYOUT_LIST});
+      }
+    };
+
+    click_layout_gallery = (event) => {
+      console.log("click .layout-gallery");
+      if (g_gallery_type != GalleryType.enum.LAYOUT_GALLERY) {
+        send_set_state({key: StateKey.enum.GALLERY_TYPE, value: GalleryType.enum.LAYOUT_GALLERY});
+      }
+    };
+
+    function formatFileSize(bytes) {
+      if (bytes === 0) return '0KB';
+      const kb = Math.floor(bytes / 1024);
+      return kb.toLocaleString('en-US') + 'KB';
+    }
+
+  </script>
+</head>
+
+<body>
+  <div class="container">
+    <div class="top-bar">
+      <div class="ext-container">
+        <div class="ext-sub">
+          <div class="ext"><i class="fa-solid fa-folder"></i></div>
+          <div class="ext"><i class="fa-solid fa-file"></i></div>
+          <div class="ext"><i class="fa-solid fa-images"></i></div>
+          <div class="ext"><i class="fa-solid fa-video"></i></div>
+          <div class="ext"><i class="fa-solid fa-volume-high"></i></div>
+          <div class="ext"><i class="fa-solid fa-ellipsis"></i></div>
+        </div>
+        <div class="ext-sub">
+          <div class="ext layout-list"><i class="fa-solid fa-list"></i></div>
+          <div class="ext layout-gallery"><i class="fa-solid fa-table-cells"></i></i></div>
+        </div>
+        <!--
                         <div><i class="fas fa-th-large"></i></div>
                         <div><i class="fas fa-th-list"></i></div>
                     -->
-                </div>
-                <div class="slider-container">
-                    <input class="slider" type="range" id="volume" name="volume" min="0" max="100" value="50">
-                </div>
-                <div class="file-table">
-                    <div class="file-header">
-                        <div class="file-cell">name</div>
-                        <div class="cell">size</div>
-                        <div class="cell">ext</div>
-                        <div class="cell">date</div>
-                    </div>
-                </div>
-            </div>
-            <div class="gallery" style="display:none;">
-                <div class="media"><div class="file">asfaslfja&#8203;aslfkjaslk&#8203;fjasl;dfj&#8203;akl;fj;alkfjasklfj.txt</div></div>
-                <div class="media"><div class="file">asfaslfj&#8203;aaslfk&#8203;jaslkfjasl&#8203;;dfjakl;fj;alkfjasklfj.txt</div></div>
-                <div class="media"><div class="file">asfaslfjaa&#8203;slfkjaslk&#8203;fjasl;dfjak&#8203;l;fj;alkfjasklfj.txt</div></div>
-                <div class="media"><video controls><source src="20190602_181216.mp4" type="video/mp4" /></video></div>
-                <div class="media"><img src="header-logo.bmp" title="Image 2"></div>
-                <div class="media"><img src="header-logo.jpg" tltle="Image 2"></div>
-                <div class="media"><img src="header-logo.png" title="Image 2"></div>
-                <div class="media"><audio controls><source src="내곁에서%20떠나가지%20말아요.mp3" type="audio/mp3" alt="Image 3"  /></audio></div>
-                <div class="media"><video controls><source src="20190602_181216.mp4" type="video/mp4" alt="Image 1"  /></video></div>
-                <div class="media"><div class="file">asfaslfja&#8203;aslfkjaslk&#8203;fjasl;dfj&#8203;akl;fj;alkfjasklfj.txt</div></div>
-                <div class="media"><div class="file">asfaslfj&#8203;aaslfk&#8203;jaslkfjasl&#8203;;dfjakl;fj;alkfjasklfj.txt</div></div>
-                <div class="media"><div class="file">asfaslfjaa&#8203;slfkjaslk&#8203;fjasl;dfjak&#8203;l;fj;alkfjasklfj.txt</div></div>
-                <div class="media"><video controls><source src="20190602_181216.mp4" type="video/mp4" /></video></div>
-                <div class="media"><img src="header-logo.bmp" title="Image 2"></div>
-                <div class="media"><img src="header-logo.jpg" tltle="Image 2"></div>
-                <div class="media"><img src="header-logo.png" title="Image 2"></div>
-                <div class="media"><audio controls><source src="내곁에서%20떠나가지%20말아요.mp3" type="audio/mp3" alt="Image 3"  /></audio></div>
-                <div class="media"><video controls><source src="20190602_181216.mp4" type="video/mp4" alt="Image 1"  /></video></div>
-                <div class="media"><div class="file">asfaslfja&#8203;aslfkjaslk&#8203;fjasl;dfj&#8203;akl;fj;alkfjasklfj.txt</div></div>
-                <div class="media"><div class="file">asfaslfj&#8203;aaslfk&#8203;jaslkfjasl&#8203;;dfjakl;fj;alkfjasklfj.txt</div></div>
-                <div class="media"><div class="file">asfaslfjaa&#8203;slfkjaslk&#8203;fjasl;dfjak&#8203;l;fj;alkfjasklfj.txt</div></div>
-                <div class="media"><video controls><source src="20190602_181216.mp4" type="video/mp4" /></video></div>
-                <div class="media"><img src="header-logo.bmp" title="Image 2"></div>
-                <div class="media"><img src="header-logo.jpg" tltle="Image 2"></div>
-                <div class="media"><img src="header-logo.png" title="Image 2"></div>
-                <div class="media"><audio controls><source src="내곁에서%20떠나가지%20말아요.mp3" type="audio/mp3" alt="Image 3"  /></audio></div>
-                <div class="media"><video controls><source src="20190602_181216.mp4" type="video/mp4" alt="Image 1"  /></video></div>
-                <div class="media"><div class="file">asfaslfja&#8203;aslfkjaslk&#8203;fjasl;dfj&#8203;akl;fj;alkfjasklfj.txt</div></div>
-                <div class="media"><div class="file">asfaslfj&#8203;aaslfk&#8203;jaslkfjasl&#8203;;dfjakl;fj;alkfjasklfj.txt</div></div>
-                <div class="media"><div class="file">asfaslfjaa&#8203;slfkjaslk&#8203;fjasl;dfjak&#8203;l;fj;alkfjasklfj.txt</div></div>
-                <div class="media"><video controls><source src="20190602_181216.mp4" type="video/mp4" /></video></div>
-                <div class="media"><img src="header-logo.bmp" title="Image 2"></div>
-                <div class="media"><img src="header-logo.jpg" tltle="Image 2"></div>
-                <div class="media"><img src="header-logo.png" title="Image 2"></div>
-                <div class="media"><audio controls><source src="내곁에서%20떠나가지%20말아요.mp3" type="audio/mp3" alt="Image 3"  /></audio></div>
-                <div class="media"><video controls><source src="20190602_181216.mp4" type="video/mp4" alt="Image 1"  /></video></div>
-                <div class="media"><div class="file">asfaslfja&#8203;aslfkjaslk&#8203;fjasl;dfj&#8203;akl;fj;alkfjasklfj.txt</div></div>
-                <div class="media"><div class="file">asfaslfj&#8203;aaslfk&#8203;jaslkfjasl&#8203;;dfjakl;fj;alkfjasklfj.txt</div></div>
-                <div class="media"><div class="file">asfaslfjaa&#8203;slfkjaslk&#8203;fjasl;dfjak&#8203;l;fj;alkfjasklfj.txt</div></div>
-                <div class="media"><video controls><source src="20190602_181216.mp4" type="video/mp4" /></video></div>
-                <div class="media"><img src="header-logo.bmp" title="Image 2"></div>
-                <div class="media"><img src="header-logo.jpg" tltle="Image 2"></div>
-                <div class="media"><img src="header-logo.png" title="Image 2"></div>
-                <div class="media"><audio controls><source src="내곁에서%20떠나가지%20말아요.mp3" type="audio/mp3" alt="Image 3"  /></audio></div>
-                <div class="media"><video controls><source src="20190602_181216.mp4" type="video/mp4" alt="Image 1"  /></video></div>
-                <div class="media"><div class="file">asfaslfja&#8203;aslfkjaslk&#8203;fjasl;dfj&#8203;akl;fj;alkfjasklfj.txt</div></div>
-                <div class="media"><div class="file">asfaslfj&#8203;aaslfk&#8203;jaslkfjasl&#8203;;dfjakl;fj;alkfjasklfj.txt</div></div>
-                <div class="media"><div class="file">asfaslfjaa&#8203;slfkjaslk&#8203;fjasl;dfjak&#8203;l;fj;alkfjasklfj.txt</div></div>
-                <div class="media"><video controls><source src="20190602_181216.mp4" type="video/mp4" /></video></div>
-                <div class="media"><img src="header-logo.bmp" title="Image 2"></div>
-                <div class="media"><img src="header-logo.jpg" tltle="Image 2"></div>
-                <div class="media"><img src="header-logo.png" title="Image 2"></div>
-                <div class="media"><audio controls><source src="내곁에서%20떠나가지%20말아요.mp3" type="audio/mp3" alt="Image 3"  /></audio></div>
-                <div class="media"><video controls><source src="20190602_181216.mp4" type="video/mp4" alt="Image 1"  /></video></div>
-                <div class="media"><div class="file">asfaslfja&#8203;aslfkjaslk&#8203;fjasl;dfj&#8203;akl;fj;alkfjasklfj.txt</div></div>
-                <div class="media"><div class="file">asfaslfj&#8203;aaslfk&#8203;jaslkfjasl&#8203;;dfjakl;fj;alkfjasklfj.txt</div></div>
-                <div class="media"><div class="file">asfaslfjaa&#8203;slfkjaslk&#8203;fjasl;dfjak&#8203;l;fj;alkfjasklfj.txt</div></div>
-                <div class="media"><video controls><source src="20190602_181216.mp4" type="video/mp4" /></video></div>
-                <div class="media"><img src="header-logo.bmp" title="Image 2"></div>
-                <div class="media"><img src="header-logo.jpg" tltle="Image 2"></div>
-                <div class="media"><img src="header-logo.png" title="Image 2"></div>
-                <div class="media"><audio controls><source src="내곁에서%20떠나가지%20말아요.mp3" type="audio/mp3" alt="Image 3"  /></audio></div>
-                <div class="media"><video controls><source src="20190602_181216.mp4" type="video/mp4" alt="Image 1"  /></video></div>
-                <div class="media"><div class="file">asfaslfja&#8203;aslfkjaslk&#8203;fjasl;dfj&#8203;akl;fj;alkfjasklfj.txt</div></div>
-                <div class="media"><div class="file">asfaslfj&#8203;aaslfk&#8203;jaslkfjasl&#8203;;dfjakl;fj;alkfjasklfj.txt</div></div>
-                <div class="media"><div class="file">asfaslfjaa&#8203;slfkjaslk&#8203;fjasl;dfjak&#8203;l;fj;alkfjasklfj.txt</div></div>
-                <div class="media"><video controls><source src="20190602_181216.mp4" type="video/mp4" /></video></div>
-                <div class="media"><img src="header-logo.bmp" title="Image 2"></div>
-                <div class="media"><img src="header-logo.jpg" tltle="Image 2"></div>
-                <div class="media"><img src="header-logo.png" title="Image 2"></div>
-                <div class="media"><audio controls><source src="내곁에서%20떠나가지%20말아요.mp3" type="audio/mp3" alt="Image 3"  /></audio></div>
-                <div class="media"><video controls><source src="20190602_181216.mp4" type="video/mp4" alt="Image 1"  /></video></div>
-            </div>
-            <div class="filelist" >
-                
-                <div class="file-table">
-                    <div class="file-row"><div class="file-cell"><i class="fa-solid fa-file"></i><span class="filename">report_asfkljaslfkja;slfdja;skldfj;klfjsd.pdf</span></div><div class="cell">12 MB</div><div class="cell">PDF</div><div class="cell">2025-05-09</div></div>
-                    <div class="file-row"><div class="file-cell"><i class="fa-solid fa-file"></i><span class="filename">report_asfkljaslfkja;slfdja;skldfj;klfjsd.pdf</span></div><div class="cell">1124123424242 MB</div><div class="cell">PDF</div><div class="cell">2025-05-09</div></div>
-                    <div class="file-row"><div class="file-cell"><i class="fa-solid fa-file"></i><span class="filename">report_asfkljaslfkja;slfdja;skldfj;klfjsd.pdf</span></div><div class="cell">1.2 MB</div><div class="cell">PDF</div><div class="cell">2025-05-09</div></div>
-                    <div class="file-row"><div class="file-cell"><i class="fa-solid fa-file"></i><span class="filename">report_asfkljaslfkja;slfdja;skldfj;klfjsd.pdf</span></div><div class="cell">1.2 MB</div><div class="cell">PDF</div><div class="cell">2025-05-09</div></div>
-                    <div class="file-row"><div class="file-cell"><i class="fa-solid fa-file"></i><span class="filename">report_asfkljaslfkja;slfdja;skldfj;klfjsd.pdf</span></div><div class="cell">1.2 MB</div><div class="cell">PDF</div><div class="cell">2025-05-09</div></div>
-                    <div class="file-row"><div class="file-cell"><i class="fa-solid fa-file"></i><span class="filename">report_asfkljaslfkja;slfdja;skldfj;klfjsd.pdf</span></div><div class="cell">1.2 MB</div><div class="cell">PDF</div><div class="cell">2025-05-09</div></div>
-                    <div class="file-row"><div class="file-cell"><i class="fa-solid fa-file"></i><span class="filename">report_asfkljaslfkja;slfdja;skldfj;klfjsd.pdf</span></div><div class="cell">1.2 MB</div><div class="cell">PDF</div><div class="cell">2025-05-09</div></div>
-                    <div class="file-row"><div class="file-cell"><i class="fa-solid fa-file"></i><span class="filename">report_asfkljaslfkja;slfdja;skldfj;klfjsd.pdf</span></div><div class="cell">1.2 MB</div><div class="cell">PDF</div><div class="cell">2025-05-09</div></div>
-                    <div class="file-row"><div class="file-cell"><i class="fa-solid fa-file"></i><span class="filename">report_asfkljaslfkja;slfdja;skldfj;klfjsd.pdf</span></div><div class="cell">1.2 MB</div><div class="cell">PDF</div><div class="cell">2025-05-09</div></div>
-                    <div class="file-row"><div class="file-cell"><i class="fa-solid fa-file"></i><span class="filename">report_asfkljaslfkja;slfdja;skldfj;klfjsd.pdf</span></div><div class="cell">1.2 MB</div><div class="cell">PDF</div><div class="cell">2025-05-09</div></div>
-                    <div class="file-row"><div class="file-cell"><i class="fa-solid fa-file"></i><span class="filename">report_asfkljaslfkja;slfdja;skldfj;klfjsd.pdf</span></div><div class="cell">1.2 MB</div><div class="cell">PDF</div><div class="cell">2025-05-09</div></div>
-                    <div class="file-row"><div class="file-cell"><i class="fa-solid fa-file"></i><span class="filename">report_asfkljaslfkja;slfdja;skldfj;klfjsd.pdf</span></div><div class="cell">1.2 MB</div><div class="cell">PDF</div><div class="cell">2025-05-09</div></div>
-                    <div class="file-row"><div class="file-cell"><i class="fa-solid fa-file"></i><span class="filename">report_asfkljaslfkja;slfdja;skldfj;klfjsd.pdf</span></div><div class="cell">1.2 MB</div><div class="cell">PDF</div><div class="cell">2025-05-09</div></div>
-                    <div class="file-row"><div class="file-cell"><i class="fa-solid fa-file"></i><span class="filename">report_asfkljaslfkja;slfdja;skldfj;klfjsd.pdf</span></div><div class="cell">1.2 MB</div><div class="cell">PDF</div><div class="cell">2025-05-09</div></div>
-                    <div class="file-row"><div class="file-cell"><i class="fa-solid fa-file"></i><span class="filename">report_asfkljaslfkja;slfdja;skldfj;klfjsd.pdf</span></div><div class="cell">1.2 MB</div><div class="cell">PDF</div><div class="cell">2025-05-09</div></div>
-                    <div class="file-row"><div class="file-cell"><i class="fa-solid fa-file"></i><span class="filename">report_asfkljaslfkja;slfdja;skldfj;klfjsd.pdf</span></div><div class="cell">1.2 MB</div><div class="cell">PDF</div><div class="cell">2025-05-09</div></div>
-                    <div class="file-row"><div class="file-cell"><i class="fa-solid fa-file"></i><span class="filename">report_asfkljaslfkja;slfdja;skldfj;klfjsd.pdf</span></div><div class="cell">1.2 MB</div><div class="cell">PDF</div><div class="cell">2025-05-09</div></div>
-                    <div class="file-row"><div class="file-cell"><i class="fa-solid fa-file"></i><span class="filename">report_asfkljaslfkja;slfdja;skldfj;klfjsd.pdf</span></div><div class="cell">1.2 MB</div><div class="cell">PDF</div><div class="cell">2025-05-09</div></div>
-                    <div class="file-row"><div class="file-cell"><i class="fa-solid fa-file"></i><span class="filename">report_asfkljaslfkja;slfdja;skldfj;klfjsd.pdf</span></div><div class="cell">1.2 MB</div><div class="cell">PDF</div><div class="cell">2025-05-09</div></div>
-                    <div class="file-row"><div class="file-cell"><i class="fa-solid fa-file"></i><span class="filename">report_asfkljaslfkja;slfdja;skldfj;klfjsd.pdf</span></div><div class="cell">1.2 MB</div><div class="cell">PDF</div><div class="cell">2025-05-09</div></div>
-                    <div class="file-row"><div class="file-cell"><i class="fa-solid fa-file"></i><span class="filename">report_asfkljaslfkja;slfdja;skldfj;klfjsd.pdf</span></div><div class="cell">1.2 MB</div><div class="cell">PDF</div><div class="cell">2025-05-09</div></div>
-                    <div class="file-row"><div class="file-cell"><i class="fa-solid fa-file"></i><span class="filename">report_asfkljaslfkja;slfdja;skldfj;klfjsd.pdf</span></div><div class="cell">1.2 MB</div><div class="cell">PDF</div><div class="cell">2025-05-09</div></div>
-                    <div class="file-row"><div class="file-cell"><i class="fa-solid fa-file"></i><span class="filename">report_asfkljaslfkja;slfdja;skldfj;klfjsd.pdf</span></div><div class="cell">1.2 MB</div><div class="cell">PDF</div><div class="cell">2025-05-09</div></div>
-                    <div class="file-row"><div class="file-cell"><i class="fa-solid fa-file"></i><span class="filename">report_asfkljaslfkja;slfdja;skldfj;klfjsd.pdf</span></div><div class="cell">1.2 MB</div><div class="cell">PDF</div><div class="cell">2025-05-09</div></div>
-                    <div class="file-row"><div class="file-cell"><i class="fa-solid fa-file"></i><span class="filename">report_asfkljaslfkja;slfdja;skldfj;klfjsd.pdf</span></div><div class="cell">1.2 MB</div><div class="cell">PDF</div><div class="cell">2025-05-09</div></div>
-                    <div class="file-row"><div class="file-cell"><i class="fa-solid fa-file"></i><span class="filename">report_asfkljaslfkja;slfdja;skldfj;klfjsd.pdf</span></div><div class="cell">1.2 MB</div><div class="cell">PDF</div><div class="cell">2025-05-09</div></div>
-                    <div class="file-row"><div class="file-cell"><i class="fa-solid fa-file"></i><span class="filename">report_asfkljaslfkja;slfdja;skldfj;klfjsd.pdf</span></div><div class="cell">1.2 MB</div><div class="cell">PDF</div><div class="cell">2025-05-09</div></div>
-                    <div class="file-row"><div class="file-cell"><i class="fa-solid fa-file"></i><span class="filename">report_asfkljaslfkja;slfdja;skldfj;klfjsd.pdf</span></div><div class="cell">1.2 MB</div><div class="cell">PDF</div><div class="cell">2025-05-09</div></div>
-                    <div class="file-row"><div class="file-cell"><i class="fa-solid fa-file"></i><span class="filename">report_asfkljaslfkja;slfdja;skldfj;klfjsd.pdf</span></div><div class="cell">1.2 MB</div><div class="cell">PDF</div><div class="cell">2025-05-09</div></div>
-                    <div class="file-row"><div class="file-cell"><i class="fa-solid fa-file"></i><span class="filename">report_asfkljaslfkja;slfdja;skldfj;klfjsd.pdf</span></div><div class="cell">1.2 MB</div><div class="cell">PDF</div><div class="cell">2025-05-09</div></div>
-                    <div class="file-row"><div class="file-cell"><i class="fa-solid fa-file"></i><span class="filename">report_asfkljaslfkja;slfdja;skldfj;klfjsd.pdf</span></div><div class="cell">1.2 MB</div><div class="cell">PDF</div><div class="cell">2025-05-09</div></div>
-                    <div class="file-row"><div class="file-cell"><i class="fa-solid fa-file"></i><span class="filename">report_asfkljaslfkja;slfdja;skldfj;klfjsd.pdf</span></div><div class="cell">1.2 MB</div><div class="cell">PDF</div><div class="cell">2025-05-09</div></div>
-                    <div class="file-row"><div class="file-cell"><i class="fa-solid fa-file"></i><span class="filename">report_asfkljaslfkja;slfdja;skldfj;klfjsd.pdf</span></div><div class="cell">1.2 MB</div><div class="cell">PDF</div><div class="cell">2025-05-09</div></div>
-                    <div class="file-row"><div class="file-cell"><i class="fa-solid fa-file"></i><span class="filename">report_asfkljaslfkja;slfdja;skldfj;klfjsd.pdf</span></div><div class="cell">1.2 MB</div><div class="cell">PDF</div><div class="cell">2025-05-09</div></div>
-                    <div class="file-row"><div class="file-cell"><i class="fa-solid fa-file"></i><span class="filename">report_asfkljaslfkja;slfdja;skldfj;klfjsd.pdf</span></div><div class="cell">1.2 MB</div><div class="cell">PDF</div><div class="cell">2025-05-09</div></div>
-                    <div class="file-row"><div class="file-cell"><i class="fa-solid fa-file"></i><span class="filename">report_asfkljaslfkja;slfdja;skldfj;klfjsd.pdf</span></div><div class="cell">1.2 MB</div><div class="cell">PDF</div><div class="cell">2025-05-09</div></div>
-                    <div class="file-row"><div class="file-cell"><i class="fa-solid fa-file"></i><span class="filename">report_asfkljaslfkja;slfdja;skldfj;klfjsd.pdf</span></div><div class="cell">1.2 MB</div><div class="cell">PDF</div><div class="cell">2025-05-09</div></div>
-                    <div class="file-row"><div class="file-cell"><i class="fa-solid fa-file"></i><span class="filename">report_asfkljaslfkja;slfdja;skldfj;klfjsd.pdf</span></div><div class="cell">1.2 MB</div><div class="cell">PDF</div><div class="cell">2025-05-09</div></div>
-                    <div class="file-row"><div class="file-cell"><i class="fa-solid fa-file"></i><span class="filename">report_asfkljaslfkja;slfdja;skldfj;klfjsd.pdf</span></div><div class="cell">1.2 MB</div><div class="cell">PDF</div><div class="cell">2025-05-09</div></div>
-                    <div class="file-row"><div class="file-cell"><i class="fa-solid fa-file"></i><span class="filename">report_asfkljaslfkja;slfdja;skldfj;klfjsd.pdf</span></div><div class="cell">12342422 MB</div><div class="cell">PDF</div><div class="cell">2025-05-09</div></div>
-                    <div class="file-row"><div class="file-cell"><i class="fa-solid fa-file"></i><span class="filename">report_asfkljaslfkja;slfdja;skldfj;klfjsd.pdf</span></div><div class="cell">1.2 MB</div><div class="cell">PDF</div><div class="cell">2025-05-09</div></div>
-                    <div class="file-row"><div class="file-cell"><i class="fa-solid fa-file"></i><span class="filename">report_asfkljaslfkja;slfdja;skldfj;klfjsd.pdf</span></div><div class="cell">1.2 MB</div><div class="cell">PDF</div><div class="cell">2025-05-09</div></div>
-                    <div class="file-row"><div class="file-cell"><i class="fa-solid fa-file"></i><span class="filename">report_asfkljaslfkja;slfdja;skldfj;klfjsd.pdf</span></div><div class="cell">1.2 MB</div><div class="cell">PDF</div><div class="cell">2025-05-09</div></div>
-                    <div class="file-row"><div class="file-cell"><i class="fa-solid fa-file"></i><span class="filename">report_asfkljaslfkja;slfdja;skldfj;klfjsd.pdf</span></div><div class="cell">1.2 MB</div><div class="cell">PDF</div><div class="cell">2025-05-09</div></div>
-                    <div class="file-row"><div class="file-cell"><i class="fa-solid fa-file"></i><span class="filename">report_asfkljaslfkja;slfdja;skldfj;klfjsd.pdf</span></div><div class="cell">1.2 MB</div><div class="cell">PDF</div><div class="cell">2025-05-09</div></div>
-                    <div class="file-row"><div class="file-cell"><i class="fa-solid fa-file"></i><span class="filename">report_asfkljaslfkja;slfdja;skldfj;klfjsd.pdf</span></div><div class="cell">1.2 MB</div><div class="cell">PDF</div><div class="cell">2025-05-09</div></div>
-                    <div class="file-row"><div class="file-cell"><i class="fa-solid fa-file"></i><span class="filename">report_asfkljaslfkja;slfdja;skldfj;klfjsd.pdf</span></div><div class="cell">1.2 MB</div><div class="cell">PDF</div><div class="cell">2025-05-09</div></div>
-                    <div class="file-row"><div class="file-cell"><i class="fa-solid fa-file"></i><span class="filename">report_asfkljaslfkja;slfdja;skldfj;klfjsd.pdf</span></div><div class="cell">1.2 MB</div><div class="cell">PDF</div><div class="cell">2025-05-09</div></div>
-                    <div class="file-row"><div class="file-cell"><i class="fa-solid fa-file"></i><span class="filename">report_asfkljaslfkja;slfdja;skldfj;klfjsd.pdf</span></div><div class="cell">1.2 MB</div><div class="cell">PDF</div><div class="cell">2025-05-09</div></div>
-                    <div class="file-row"><div class="file-cell"><i class="fa-solid fa-file"></i><span class="filename">report_asfkljaslfkja;slfdja;skldfj;klfjsd.pdf</span></div><div class="cell">1.2 MB</div><div class="cell">PDF</div><div class="cell">2025-05-09</div></div>
-                    <div class="file-row"><div class="file-cell"><i class="fa-solid fa-file"></i><span class="filename">report_asfkljaslfkja;slfdja;skldfj;klfjsd.pdf</span></div><div class="cell">1.2 MB</div><div class="cell">PDF</div><div class="cell">2025-05-09</div></div>
-                    <div class="file-row"><div class="file-cell"><i class="fa-solid fa-file"></i><span class="filename">report_asfkljaslfkja;slfdja;skldfj;klfjsd.pdf</span></div><div class="cell">1.2 MB</div><div class="cell">PDF</div><div class="cell">2025-05-09</div></div>
-                    <div class="file-row"><div class="file-cell"><i class="fa-solid fa-file"></i><span class="filename">report_asfkljaslfkja;slfdja;skldfj;klfjsd.pdf</span></div><div class="cell">1.2 MB</div><div class="cell">PDF</div><div class="cell">2025-05-09</div></div>
-                    <div class="file-row"><div class="file-cell"><i class="fa-solid fa-file"></i><span class="filename">report_asfkljaslfkja;slfdja;skldfj;klfjsd.pdf</span></div><div class="cell">1.2 MB</div><div class="cell">PDF</div><div class="cell">2025-05-09</div></div>
-                    <div class="file-row"><div class="file-cell"><i class="fa-solid fa-file"></i><span class="filename">report_asfkljaslfkja;slfdja;skldfj;klfjsd.pdf</span></div><div class="cell">1.2 MB</div><div class="cell">PDF</div><div class="cell">2025-05-09</div></div>
-                    <div class="file-row"><div class="file-cell"><i class="fa-solid fa-file"></i><span class="filename">report_asfkljaslfkja;slfdja;skldfj;klfjsd.pdf</span></div><div class="cell">1.2 MB</div><div class="cell">PDF</div><div class="cell">2025-05-09</div></div>
-                    <div class="file-row"><div class="file-cell"><i class="fa-solid fa-file"></i><span class="filename">report_asfkljaslfkja;slfdja;skldfj;klfjsd.pdf</span></div><div class="cell">1.2 MB</div><div class="cell">PDF</div><div class="cell">2025-05-09</div></div>
-                    <div class="file-row"><div class="file-cell"><i class="fa-solid fa-file"></i><span class="filename">report_asfkljaslfkja;slfdja;skldfj;klfjsd.pdf</span></div><div class="cell">1.2 MB</div><div class="cell">PDF</div><div class="cell">2025-05-09</div></div>
-                    <div class="file-row"><div class="file-cell"><i class="fa-solid fa-file"></i><span class="filename">report_asfkljaslfkja;slfdja;skldfj;klfjsd.pdf</span></div><div class="cell">1.2 MB</div><div class="cell">PDF</div><div class="cell">2025-05-09</div></div>
-                    <div class="file-row"><div class="file-cell"><i class="fa-solid fa-file"></i><span class="filename">report_asfkljaslfkja;slfdja;skldfj;klfjsd.pdf</span></div><div class="cell">1.2 MB</div><div class="cell">PDF</div><div class="cell">2025-05-09</div></div>
-                    <div class="file-row"><div class="file-cell"><i class="fa-solid fa-file"></i><span class="filename">report_asfkljaslfkja;slfdja;skldfj;klfjsd.pdf</span></div><div class="cell">1.2 MB</div><div class="cell">PDF</div><div class="cell">2025-05-09</div></div>
-                    <div class="file-row"><div class="file-cell"><i class="fa-solid fa-file"></i><span class="filename">report_asfkljaslfkja;slfdja;skldfj;klfjsd.pdf</span></div><div class="cell">1.2 MB</div><div class="cell">PDF</div><div class="cell">2025-05-09</div></div>
-                    <div class="file-row"><div class="file-cell"><i class="fa-solid fa-file"></i><span class="filename">report_asfkljaslfkja;slfdja;skldfj;klfjsd.pdf</span></div><div class="cell">1.2 MB</div><div class="cell">PDF</div><div class="cell">2025-05-09</div></div>
-                </div>
-
-            </div>
+      </div>
+      <div class="slider-container" style="display:none;">
+        <input class="slider" type="range" id="volume" name="volume" min="0" max="100" value="50">
+      </div>
+      <div class="cur-path">
+        <div class="cell cur-dir"><i class="fa-solid fa-folder"></i>
+          <div class="dir-all">
+            <div class="dir-part">C:</div>/<div class="dir-part">Windows</div>/<div class="dir-part">abc</div>
+          </div>
+          <div class="dir-browser"><i class="fa-solid fa-globe"></i></div>
         </div>
-    </body>
-        <script>
-            document.querySelector('.slider').value = 20;
-            document.querySelector('.slider').addEventListener('input', function() {
-                change_width(this.value);
-            });
+      </div>
+      <div>
+        <div class="fileheader">
+          <div class="file-header">
+            <div class="cell file">name</div>
+            <div class="cell browser"></div>
+            <div class="cell size">size</div>
+            <div class="cell ext">ext</div>
+            <div class="cell date">date</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="gallery" style="display:none;">
+      <div class="media">
+        <div class="file">asfaslfja&#8203;aslfkjaslk&#8203;fjasl;dfj&#8203;akl;fj;alkfjasklfj.txt</div>
+      </div>
+      <div class="media">
+        <div class="file">asfaslfj&#8203;aaslfk&#8203;jaslkfjasl&#8203;;dfjakl;fj;alkfjasklfj.txt</div>
+      </div>
+      <div class="media">
+        <div class="file">asfaslfjaa&#8203;slfkjaslk&#8203;fjasl;dfjak&#8203;l;fj;alkfjasklfj.txt</div>
+      </div>
+      <div class="media"><video controls>
+          <source src="20190602_181216.mp4" type="video/mp4" />
+        </video></div>
+      <div class="media"><img src="header-logo.bmp" title="Image 2"></div>
+      <div class="media"><img src="header-logo.jpg" tltle="Image 2"></div>
+      <div class="media"><img src="header-logo.png" title="Image 2"></div>
+      <div class="media"><audio controls>
+          <source src="내곁에서%20떠나가지%20말아요.mp3" type="audio/mp3" alt="Image 3" />
+        </audio></div>
+      <div class="media"><video controls>
+          <source src="20190602_181216.mp4" type="video/mp4" alt="Image 1" />
+        </video></div>
+      <div class="media">
+        <div class="file">asfaslfja&#8203;aslfkjaslk&#8203;fjasl;dfj&#8203;akl;fj;alkfjasklfj.txt</div>
+      </div>
+      <div class="media">
+        <div class="file">asfaslfj&#8203;aaslfk&#8203;jaslkfjasl&#8203;;dfjakl;fj;alkfjasklfj.txt</div>
+      </div>
+      <div class="media">
+        <div class="file">asfaslfjaa&#8203;slfkjaslk&#8203;fjasl;dfjak&#8203;l;fj;alkfjasklfj.txt</div>
+      </div>
+      <div class="media"><video controls>
+          <source src="20190602_181216.mp4" type="video/mp4" />
+        </video></div>
+      <div class="media"><img src="header-logo.bmp" title="Image 2"></div>
+      <div class="media"><img src="header-logo.jpg" tltle="Image 2"></div>
+      <div class="media"><img src="header-logo.png" title="Image 2"></div>
+      <div class="media"><audio controls>
+          <source src="내곁에서%20떠나가지%20말아요.mp3" type="audio/mp3" alt="Image 3" />
+        </audio></div>
+      <div class="media"><video controls>
+          <source src="20190602_181216.mp4" type="video/mp4" alt="Image 1" />
+        </video></div>
+      <div class="media">
+        <div class="file">asfaslfja&#8203;aslfkjaslk&#8203;fjasl;dfj&#8203;akl;fj;alkfjasklfj.txt</div>
+      </div>
+      <div class="media">
+        <div class="file">asfaslfj&#8203;aaslfk&#8203;jaslkfjasl&#8203;;dfjakl;fj;alkfjasklfj.txt</div>
+      </div>
+      <div class="media">
+        <div class="file">asfaslfjaa&#8203;slfkjaslk&#8203;fjasl;dfjak&#8203;l;fj;alkfjasklfj.txt</div>
+      </div>
+      <div class="media"><video controls>
+          <source src="20190602_181216.mp4" type="video/mp4" />
+        </video></div>
+      <div class="media"><img src="header-logo.bmp" title="Image 2"></div>
+      <div class="media"><img src="header-logo.jpg" tltle="Image 2"></div>
+      <div class="media"><img src="header-logo.png" title="Image 2"></div>
+      <div class="media"><audio controls>
+          <source src="내곁에서%20떠나가지%20말아요.mp3" type="audio/mp3" alt="Image 3" />
+        </audio></div>
+      <div class="media"><video controls>
+          <source src="20190602_181216.mp4" type="video/mp4" alt="Image 1" />
+        </video></div>
+      <div class="media">
+        <div class="file">asfaslfja&#8203;aslfkjaslk&#8203;fjasl;dfj&#8203;akl;fj;alkfjasklfj.txt</div>
+      </div>
+      <div class="media">
+        <div class="file">asfaslfj&#8203;aaslfk&#8203;jaslkfjasl&#8203;;dfjakl;fj;alkfjasklfj.txt</div>
+      </div>
+      <div class="media">
+        <div class="file">asfaslfjaa&#8203;slfkjaslk&#8203;fjasl;dfjak&#8203;l;fj;alkfjasklfj.txt</div>
+      </div>
+      <div class="media"><video controls>
+          <source src="20190602_181216.mp4" type="video/mp4" />
+        </video></div>
+      <div class="media"><img src="header-logo.bmp" title="Image 2"></div>
+      <div class="media"><img src="header-logo.jpg" tltle="Image 2"></div>
+      <div class="media"><img src="header-logo.png" title="Image 2"></div>
+      <div class="media"><audio controls>
+          <source src="내곁에서%20떠나가지%20말아요.mp3" type="audio/mp3" alt="Image 3" />
+        </audio></div>
+      <div class="media"><video controls>
+          <source src="20190602_181216.mp4" type="video/mp4" alt="Image 1" />
+        </video></div>
+      <div class="media">
+        <div class="file">asfaslfja&#8203;aslfkjaslk&#8203;fjasl;dfj&#8203;akl;fj;alkfjasklfj.txt</div>
+      </div>
+      <div class="media">
+        <div class="file">asfaslfj&#8203;aaslfk&#8203;jaslkfjasl&#8203;;dfjakl;fj;alkfjasklfj.txt</div>
+      </div>
+      <div class="media">
+        <div class="file">asfaslfjaa&#8203;slfkjaslk&#8203;fjasl;dfjak&#8203;l;fj;alkfjasklfj.txt</div>
+      </div>
+      <div class="media"><video controls>
+          <source src="20190602_181216.mp4" type="video/mp4" />
+        </video></div>
+      <div class="media"><img src="header-logo.bmp" title="Image 2"></div>
+      <div class="media"><img src="header-logo.jpg" tltle="Image 2"></div>
+      <div class="media"><img src="header-logo.png" title="Image 2"></div>
+      <div class="media"><audio controls>
+          <source src="내곁에서%20떠나가지%20말아요.mp3" type="audio/mp3" alt="Image 3" />
+        </audio></div>
+      <div class="media"><video controls>
+          <source src="20190602_181216.mp4" type="video/mp4" alt="Image 1" />
+        </video></div>
+      <div class="media">
+        <div class="file">asfaslfja&#8203;aslfkjaslk&#8203;fjasl;dfj&#8203;akl;fj;alkfjasklfj.txt</div>
+      </div>
+      <div class="media">
+        <div class="file">asfaslfj&#8203;aaslfk&#8203;jaslkfjasl&#8203;;dfjakl;fj;alkfjasklfj.txt</div>
+      </div>
+      <div class="media">
+        <div class="file">asfaslfjaa&#8203;slfkjaslk&#8203;fjasl;dfjak&#8203;l;fj;alkfjasklfj.txt</div>
+      </div>
+      <div class="media"><video controls>
+          <source src="20190602_181216.mp4" type="video/mp4" />
+        </video></div>
+      <div class="media"><img src="header-logo.bmp" title="Image 2"></div>
+      <div class="media"><img src="header-logo.jpg" tltle="Image 2"></div>
+      <div class="media"><img src="header-logo.png" title="Image 2"></div>
+      <div class="media"><audio controls>
+          <source src="내곁에서%20떠나가지%20말아요.mp3" type="audio/mp3" alt="Image 3" />
+        </audio></div>
+      <div class="media"><video controls>
+          <source src="20190602_181216.mp4" type="video/mp4" alt="Image 1" />
+        </video></div>
+      <div class="media">
+        <div class="file">asfaslfja&#8203;aslfkjaslk&#8203;fjasl;dfj&#8203;akl;fj;alkfjasklfj.txt</div>
+      </div>
+      <div class="media">
+        <div class="file">asfaslfj&#8203;aaslfk&#8203;jaslkfjasl&#8203;;dfjakl;fj;alkfjasklfj.txt</div>
+      </div>
+      <div class="media">
+        <div class="file">asfaslfjaa&#8203;slfkjaslk&#8203;fjasl;dfjak&#8203;l;fj;alkfjasklfj.txt</div>
+      </div>
+      <div class="media"><video controls>
+          <source src="20190602_181216.mp4" type="video/mp4" />
+        </video></div>
+      <div class="media"><img src="header-logo.bmp" title="Image 2"></div>
+      <div class="media"><img src="header-logo.jpg" tltle="Image 2"></div>
+      <div class="media"><img src="header-logo.png" title="Image 2"></div>
+      <div class="media"><audio controls>
+          <source src="내곁에서%20떠나가지%20말아요.mp3" type="audio/mp3" alt="Image 3" />
+        </audio></div>
+      <div class="media"><video controls>
+          <source src="20190602_181216.mp4" type="video/mp4" alt="Image 1" />
+        </video></div>
+      <div class="media">
+        <div class="file">asfaslfja&#8203;aslfkjaslk&#8203;fjasl;dfj&#8203;akl;fj;alkfjasklfj.txt</div>
+      </div>
+      <div class="media">
+        <div class="file">asfaslfj&#8203;aaslfk&#8203;jaslkfjasl&#8203;;dfjakl;fj;alkfjasklfj.txt</div>
+      </div>
+      <div class="media">
+        <div class="file">asfaslfjaa&#8203;slfkjaslk&#8203;fjasl;dfjak&#8203;l;fj;alkfjasklfj.txt</div>
+      </div>
+      <div class="media"><video controls>
+          <source src="20190602_181216.mp4" type="video/mp4" />
+        </video></div>
+      <div class="media"><img src="header-logo.bmp" title="Image 2"></div>
+      <div class="media"><img src="header-logo.jpg" tltle="Image 2"></div>
+      <div class="media"><img src="header-logo.png" title="Image 2"></div>
+      <div class="media"><audio controls>
+          <source src="내곁에서%20떠나가지%20말아요.mp3" type="audio/mp3" alt="Image 3" />
+        </audio></div>
+      <div class="media"><video controls>
+          <source src="20190602_181216.mp4" type="video/mp4" alt="Image 1" />
+        </video></div>
+    </div>
+    <div class="filelist">
 
-            function change_width(value){
-                document.querySelectorAll('.gallery .media').forEach(function(element) {
-                    element.style.width = value + '%';
-                });
-                document.querySelectorAll('.file-cell').forEach(function(element) {
-                    element.style.flex = value;
-                });
-            }
+      <div class="file-table">
+      </div>
 
-            document.querySelector('.file').addEventListener('copy', function(event) {
-                const selectedText = window.getSelection().toString();
-                const modifiedText = selectedText.replace(/\u200B/g, ''); 
+    </div>
+  </div>
+</body>
+<script>
+  document.querySelector('.slider').value = 20;
+  document.querySelector('.slider').addEventListener('input', function () {
+    change_width(this.value);
+  });
 
-                const clipboardData = event.clipboardData || window.clipboardData;
-                clipboardData.setData('text/plain', modifiedText);
+  function change_width(value) {
+    document.querySelectorAll('.gallery .media').forEach(function (element) {
+      element.style.width = value + '%';
+    });
+    document.querySelectorAll('.file-cell').forEach(function (element) {
+      element.style.flex = value;
+    });
+  }
 
-                event.preventDefault();
-            });
-        </script>
+  document.querySelector('.file').addEventListener('copy', function (event) {
+    const selectedText = window.getSelection().toString();
+    const modifiedText = selectedText.replace(/\u200B/g, '');
+
+    const clipboardData = event.clipboardData || window.clipboardData;
+    clipboardData.setData('text/plain', modifiedText);
+
+    event.preventDefault();
+  });
+</script>
 
 </html>
 
@@ -337,4 +512,3 @@ asfaslfjaaslfkjaslkfjasl;dfjakl;fj;alkfjasklfj.txt
 
 
 -->
-
