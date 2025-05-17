@@ -128,34 +128,22 @@
       send_list_directory({ path: res.path, is_root: false });
     }
 
-
-
     const click_path = (event) => {
       window.getSelection().removeAllRanges();
-      const target = event.currentTarget;
-      const div_row = target.closest('.file-row');
-      const item = div_row.dataset;
-      if (item.is_dir == "true"){
-        send_list_directory({ path: item.path});
-      } else {
-        send_open_path({ path: item.path, open_path_type: OpenPathType.enum.APPLICATION });
-      }
+      const dataset = event.currentTarget.closest(".data").dataset;
+      send_list_directory({ path: dataset.path});
     }
 
-    const click_path_gallery = (event) => {
+    const click_path_application = (event) => {
       window.getSelection().removeAllRanges();
-      const div_cell = event.currentTarget;
-      const item = div_cell.dataset;
-      if (item.is_dir == "true"){
-        send_list_directory({ path: item.path});
-      } else {
-        send_open_path({ path: item.path, open_path_type: OpenPathType.enum.APPLICATION });
-      }
+      const dataset = event.currentTarget.closest(".data").dataset;
+      send_open_path({ path: dataset.path, open_path_type: OpenPathType.enum.APPLICATION });
     }
 
-    const click_browser = (event) => {
+    const click_path_browser = (event) => {
+      console.log("click_path_browser");
       window.getSelection().removeAllRanges();
-      const dataset = event.currentTarget.closest('.file-row').dataset;
+      const dataset = event.currentTarget.closest('.data').dataset;
       send_open_path({ path: dataset.path, open_path_type: OpenPathType.enum.BROWSER });
     }
 
@@ -168,13 +156,6 @@
       console.log("click .layout-gallery");
       send_set_state({key: StateKey.enum.GALLERY_TYPE, value: GalleryType.enum.LAYOUT_GALLERY});
     };
-
-    const click_cur_dir_browser = (event) => {
-      window.getSelection().removeAllRanges();
-      const target = event.currentTarget;
-      const item = target.dataset;
-      send_open_path({ path: item.path, open_path_type: OpenPathType.enum.BROWSER });
-    }
 
     const click_cur_dir_part = (event) => {
       console.log('click_cur_dir_part');
@@ -243,7 +224,7 @@
       
       const cur_dir_icon = cur_dir.querySelector("i");
       const cur_dir_browser = cur_dir.querySelector(".dir-browser");
-      cur_dir_browser.addEventListener("click", click_cur_dir_browser);
+      cur_dir_browser.addEventListener("click", click_path_browser);
 
       const cur_dir_all = document.querySelector(".cur-dir .dir-all");
       const arr_dir = res.path.split("/").filter((x) => x);
@@ -284,7 +265,7 @@
           icon = "fa-file";
         }
         const div_row = document.createElement("div");
-        div_row.classList.add("file-row");
+        div_row.classList.add("file-row", "data");
         div_row.dataset.path = item.path;
         div_row.dataset.is_dir = item.is_dir;
         // div_row.dataset.has_children = item.has_children;
@@ -310,11 +291,14 @@
         div_filename.innerHTML = item.name;
         div_i_file.title = item.name;
         div_file_table.appendChild(div_row);
-        if(item.is_dir) {
+        if (item.is_dir) {
           div_icon.addEventListener("click", click_path);
-        }
-        div_filename.addEventListener("dblclick", click_path);
-        div_browser.addEventListener("click", click_browser);
+        } else {
+          div_icon.addEventListener("dblclick", click_path_application);
+        } 
+
+        div_filename.addEventListener("dblclick", click_path_application);
+        div_browser.addEventListener("click", click_path_browser);
 
       }
 
@@ -338,8 +322,10 @@
         }
 
         const div_media = document.createElement("div");
-        div_media.classList.add("media");
+        div_media.classList.add("media", "data");
         div_media.title = item.name;
+        div_media.dataset.is_dir = item.is_dir;
+        div_media.dataset.path = item.path;
         if (item.mime.startsWith("video/")) {
           div_media.innerHTML = `
             <video controls>
@@ -359,26 +345,25 @@
             <img src="" />
           `;
           div_media.querySelector("img").src = item.path;
+          div_media.addEventListener("dblclick", click_path_browser);
         } else if(item.is_dir) {
-          div_media.dataset.is_dir = item.is_dir;
-          div_media.dataset.path = item.path;
           div_media.innerHTML = `
             <div class="icon"><i class="fa-solid ${icon}"></i></div>
             <div class="file"></div>
           `;
           div_media.querySelector(".file").innerHTML = change_filename(item.name);
+          div_media.querySelector(".icon").addEventListener("click", click_path);
+          div_media.querySelector(".file").addEventListener("dblclick", click_path_application);
           div_media.querySelector(".file").addEventListener('copy', copy_gallery_filename);
-          div_media.addEventListener("dblclick", click_path_gallery);
         } else {
-          div_media.dataset.is_dir = item.is_dir;
-          div_media.dataset.path = item.path;
           div_media.innerHTML = `
             <div class="icon"><i class="fa-solid ${icon}"></i></div>
             <div class="file"></div>
           `;
           div_media.querySelector(".file").innerHTML = change_filename(item.name);
+          div_media.querySelector(".icon").addEventListener("click", click_path_application);
+          div_media.querySelector(".file").addEventListener("dblclick", click_path_application);
           div_media.querySelector(".file").addEventListener('copy', copy_gallery_filename);
-          div_media.addEventListener("dblclick", click_path_gallery);
         }
         div_gallery.appendChild(div_media);
       }
@@ -417,7 +402,7 @@
         </div>
       </div>
       <div class="cur-path">
-        <div class="cell cur-dir"><i class="fa-solid fa-folder"></i>
+        <div class="cell cur-dir data"><i class="fa-solid fa-folder"></i>
           <div class="dir-all">
           </div>
           <div class="dir-browser"><i class="fa-solid fa-globe"></i></div>
