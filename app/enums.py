@@ -35,4 +35,5 @@ class ActionId(Enum):
     OPEN_PATH = "OPEN_PATH"
     GET_STATE = "GET_STATE"
     SET_STATE = "SET_STATE"
+    GET_LINK = "GET_LINK"
     

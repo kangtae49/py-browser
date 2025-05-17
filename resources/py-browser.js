@@ -42,6 +42,7 @@ const ActionId = z.enum([
     "OPEN_PATH",
     "GET_STATE",
     "SET_STATE",
+    "GET_LINK",
 ]);
 
 const BaseMsg = z.object({
@@ -103,6 +104,17 @@ const SetStateRes = BaseMsg.extend({
     value: z.union([ContentTemplate, GalleryType, z.string()])
 });
 
+const Link = z.object({
+    key: z.string(),
+    value: z.string(),
+});
+
+const GetLinkReq = BaseMsg.extend({
+});
+
+const GetLinkRes = BaseMsg.extend({
+    items: z.array(Link),
+});
 
 
 

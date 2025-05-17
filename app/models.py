@@ -54,7 +54,15 @@ class SetStateRes(BaseMsg):
     key: StateKey
     value: ContentTemplate | GalleryType | str
 
+class Link(BaseModel):
+    key: str
+    value: str
 
+class GetLinkReq(BaseMsg):
+    pass
+
+class GetLinkRes(BaseMsg):
+    items: List[Link]
 
 
 def createFolderReq (

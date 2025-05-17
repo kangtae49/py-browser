@@ -15,6 +15,7 @@ from app.models import FolderReq, FolderRes, PathItem
 from app.models import GetStateReq, GetStateRes
 from app.models import SetStateReq, SetStateRes
 from app.models import OpenPathReq, OpenPathRes
+from app.models import GetLinkReq, GetLinkRes, Link
 from app.widgets.widget_folder import WidgetFolder
 from app.widgets.widget_content import WidgetContent
 from app.widgets.widget_base import WidgetBase
@@ -349,6 +350,28 @@ class PyBrowser(wx.Frame):
             action=req.action,
             key=req.key,
             value=value
+        )
+        self.runScriptAsync(res)
+
+    def get_link(self, param: str | GetLinkReq):
+        if isinstance(param, str):
+            req = GetLinkReq.model_validate_json(param)
+        else:
+            req = param
+        home = Path.home()
+        
+        items = [
+            Link(key="root", value=Path("/").absolute().as_posix()),
+            Link(key="home", value=home.absolute().as_posix()),
+            Link(key="down", value=home.joinpath("Downloads").absolute().as_posix()),
+            Link(key="docs", value=home.joinpath("Documents").absolute().as_posix()),
+        ]
+
+        res = GetLinkRes(
+            sender_id=req.sender_id,
+            receiver_id=req.receiver_id,
+            action=req.action,
+            items=items
         )
         self.runScriptAsync(res)
 
