@@ -16,7 +16,7 @@
       .tree ul { padding: 0 0 0 8px; margin: 0;}
       .tree li { list-style: none; padding: 0; margin:0; white-space: nowrap;}
       .tree .item { padding: 0 3px 1px 3px; margin: 0; cursor: pointer; display: inline-block;}
-      .tree .selected {background-color: #bad0e4;}
+      .tree li.selected>div {background-color: #bad0e4;}
       .tree .item .subitem { padding: 0; margin: 0; display: inline-block;}
       .fa-folder, .fa-folder-plus { color: #f4a261; margin-right: 5px;}
       .fa-folder-open { color: #f4a261; margin-right: 5px;}
@@ -31,13 +31,13 @@
           window[res.action.toLowerCase()](params);
       });
 
-      on_load = (params) => {
+      window.on_load = (params) => {
         const jres = JSON.parse(params);
         console.log("on_load");
         send_list_directory({path: null, is_root: true});
       }
       
-      list_directory = (params) => {
+      window.list_directory = (params) => {
         const jres = JSON.parse(params);
         console.log("list_directory");
         const res = FolderRes.parse(jres);
@@ -72,7 +72,7 @@
             div_path_name.title = item.path;
             div_path_name.innerHTML = item.name;
             if (res.is_root) {
-              div_item.classList.add("selected");
+              li.classList.add("selected");
             }
             li.appendChild(div_item);
 
@@ -114,18 +114,18 @@
       const go_path = (res) => {
         if (res.path == res.select_path){
           const li = document.querySelector("li[data-path='" + encodeURIComponent(res.select_path) + "']");
-          document.querySelectorAll(".tree li>div").forEach(el => {
+          document.querySelectorAll(".tree li").forEach(el => {
             el.classList.remove("selected");
           });
-          const div_item = li.querySelector("div");
-          div_item.classList.add("selected")
+          li.classList.add("selected");
 
           if (li.querySelector("li") != null) {
+            document.querySelector("li.selected>div").scrollIntoView({ behavior: 'auto', block: 'nearest', inline: 'end' });
             return;
           }
+          document.querySelector("li.selected>div").scrollIntoView({ behavior: 'auto', block: 'nearest', inline: 'end' });
 
           send_list_directory({path: res.path, is_root: false})
-          send_open_path({path: res.path});
 
         } else {
           const arr_path = res.path.split("/").filter((x) => x);
@@ -137,30 +137,30 @@
             send_list_directory({path: next_path, is_root: false, select_path: res.select_path})
           }
         }
-        document.querySelector(".selected").scrollIntoView({ behavior: 'auto', block: 'nearest', inline: 'end' });
       }
 
       const click_open_path = (event) => {
-        const li = event.currentTarget.parentElement.parentElement;
-        const div_item = event.currentTarget.parentElement;
-        const path = decodeURIComponent(li.dataset.path);
 
-        document.querySelectorAll(".tree li div").forEach(el => {
+        const li = event.currentTarget.closest("li");
+        const dataset = li.dataset;
+        const path = decodeURIComponent(dataset.path);
+
+        document.querySelectorAll(".tree li").forEach(el => {
           el.classList.remove("selected");
         });
-        div_item.classList.add("selected")
+        li.classList.add("selected")
         send_open_path({path: path});
       }
 
       const toggle_folder = (event) => {
-        const li = event.currentTarget.parentElement.parentElement;
-        const div_item = event.currentTarget.parentElement;
-        const path = decodeURIComponent(li.dataset.path);
+        const li = event.currentTarget.closest("li");
+        const dataset = li.dataset;
+        const path = decodeURIComponent(dataset.path);
 
-        document.querySelectorAll(".tree li>div").forEach(el => {
+        document.querySelectorAll(".tree li").forEach(el => {
           el.classList.remove("selected");
         });
-        div_item.classList.add("selected")
+        li.classList.add("selected")
         isExpanded = li.querySelector("li") != null;
         if (isExpanded) {
           li.querySelectorAll("ul").forEach(ul => ul.remove());
@@ -178,29 +178,30 @@
         } else {
           return;
         }
-        const div_item = document.querySelector(".selected");
+        const li_selected = document.querySelector("li.selected");
+
+        const div_item = li_selected.querySelector("div");
         const div_path_icon = div_item.querySelector(".path-icon");
         const div_path_name = div_item.querySelector(".path-name");
-        const li = div_item.parentElement;
         
 
         if (event.key === "Enter") {
-          if (li.dataset.is_dir){
+          if (li_selected.dataset.is_dir){
             div_path_icon.click();
           } else {
             div_path_name.click();
           }
         } else if(event.key === "ArrowUp") {
-          const arr = Array.from(document.querySelectorAll("div.item"));
-          const idx = arr.indexOf(div_item);
+          const arr = Array.from(document.querySelectorAll("li"));
+          const idx = arr.indexOf(li_selected);
           const prev_idx = Math.max(idx-1, 0);
           if(idx != prev_idx){
             arr[idx].classList.remove("selected");
             arr[prev_idx].classList.add("selected");
           }
         } else if(event.key === "ArrowDown") {
-          const arr = Array.from(document.querySelectorAll("div.item"));
-          const idx = arr.indexOf(div_item);
+          const arr = Array.from(document.querySelectorAll("li"));
+          const idx = arr.indexOf(li_selected);
           const next_idx = Math.min(idx+1, arr.length-1);
           if(idx != next_idx){
             arr[idx].classList.remove("selected");
@@ -208,9 +209,9 @@
             arr[next_idx].focus();
           }
         } else if(event.key === "ArrowLeft") {
-          const parent_li = li.parentElement.parentElement;
+          const parent_li = li_selected.parentElement.closest("li");
           const parent_path_icon = parent_li.querySelector(".path-icon");
-          if (li.dataset.is_dir && li.querySelector("li") != null) {
+          if (li_selected.dataset.is_dir && li_selected.querySelector("li") != null) {
             div_path_icon.click();
           } else {
             parent_path_icon.click();
@@ -219,7 +220,7 @@
           //   parent_path_icon.click();
           // }
         } else if(event.key === "ArrowRight") {
-          if (li.dataset.is_dir){
+          if (li_selected.dataset.is_dir){
             div_path_icon.click();
           } else {
             div_path_name.click();
@@ -228,7 +229,7 @@
           div_path_name.click();
         }
 
-        document.querySelector(".selected").scrollIntoView({ behavior: 'auto', block: 'nearest', inline: 'end' });
+        document.querySelector("li.selected>div").scrollIntoView({ behavior: 'auto', block: 'nearest', inline: 'end' });
       });
     </script>
   </head>

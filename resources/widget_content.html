@@ -69,7 +69,7 @@
       window[res.action.toLowerCase()](params);
     });
 
-    on_load = (params) => {
+    window.on_load = (params) => {
       const jres = JSON.parse(params);
       console.log("on_load");
       send_get_state({ key: StateKey.enum.GALLERY_TYPE });
@@ -78,16 +78,120 @@
 
       document.querySelector(".layout-list").addEventListener("click", click_layout_list);
       document.querySelector(".layout-gallery").addEventListener("click", click_layout_gallery);
-
+      
       document.querySelector('.slider').value = 20;
       document.querySelector('.slider').addEventListener('input', change_slider);
-      // document.querySelectorAll('.media .file').forEach((elem) => {
-      //   elem.addEventListener('copy', copy_gallery_filename);
-      // });
-
+      
     }
 
-    copy_gallery_filename = (event) => {
+    window.list_directory = (params) => {
+      const jres = JSON.parse(params);
+      const res = FolderRes.parse(jres);
+      g_res = res;
+
+      if (g_gallery_type == GalleryType.enum.LAYOUT_LIST) {
+        list_directory_of_list_type();
+      } else if(g_gallery_type == GalleryType.enum.LAYOUT_GALLERY) {
+        list_directory_of_gallery_type();
+      }
+    }
+
+    window.get_state = (params) => {
+      const jres = JSON.parse(params);
+      const res = GetStateRes.parse(jres);
+      console.log("get_state:", res.value);
+      if (res.key == StateKey.enum.PATH) {
+        g_path = res.value;
+        send_list_directory({ path: g_path, is_root: false });
+      } else if (res.key == StateKey.enum.GALLERY_TYPE) {
+        g_gallery_type = res.value;
+        change_layout();
+      }
+    }
+
+    window.set_state = (params) => {
+      const jres = JSON.parse(params);
+      const res = SetStateRes.parse(jres);
+      console.log("set_state:", res.value);
+      if (res.key == StateKey.enum.PATH) {
+        g_path = res.value;
+      } else if (res.key == StateKey.enum.GALLERY_TYPE) {
+        g_gallery_type = res.value;
+        change_layout();
+      }
+    }
+    
+    window.open_path = (params) => {
+      console.log("open_path");
+      const jres = JSON.parse(params);
+      const res = OpenPathRes.parse(jres);
+      send_list_directory({ path: res.path, is_root: false });
+    }
+
+
+
+    const click_path = (event) => {
+      window.getSelection().removeAllRanges();
+      const target = event.currentTarget;
+      const div_row = target.closest('.file-row');
+      const item = div_row.dataset;
+      if (item.is_dir == "true"){
+        send_list_directory({ path: item.path});
+      } else {
+        send_open_path({ path: item.path, open_path_type: OpenPathType.enum.APPLICATION });
+      }
+    }
+
+    const click_path_gallery = (event) => {
+      window.getSelection().removeAllRanges();
+      const div_cell = event.currentTarget;
+      const item = div_cell.dataset;
+      if (item.is_dir == "true"){
+        send_list_directory({ path: item.path});
+      } else {
+        send_open_path({ path: item.path, open_path_type: OpenPathType.enum.APPLICATION });
+      }
+    }
+
+    const click_browser = (event) => {
+      window.getSelection().removeAllRanges();
+      const dataset = event.currentTarget.closest('.file-row').dataset;
+      send_open_path({ path: dataset.path, open_path_type: OpenPathType.enum.BROWSER });
+    }
+
+    const click_layout_list = (event) => {
+      console.log("click .layout-list");
+      send_set_state({key: StateKey.enum.GALLERY_TYPE, value: GalleryType.enum.LAYOUT_LIST});
+    };
+    
+    const click_layout_gallery = (event) => {
+      console.log("click .layout-gallery");
+      send_set_state({key: StateKey.enum.GALLERY_TYPE, value: GalleryType.enum.LAYOUT_GALLERY});
+    };
+
+    const click_cur_dir_browser = (event) => {
+      window.getSelection().removeAllRanges();
+      const target = event.currentTarget;
+      const item = target.dataset;
+      send_open_path({ path: item.path, open_path_type: OpenPathType.enum.BROWSER });
+    }
+
+    const click_cur_dir_part = (event) => {
+      console.log('click_cur_dir_part');
+      const dataset = event.currentTarget.closest('.dir-part').dataset;
+      const dir_sub = dataset.dir_sub;
+      const root_path = dataset.path.split("/")[0] + "/";
+      send_list_directory({path: dir_sub, is_root: false});
+      send_list_directory({path: root_path, select_path: dir_sub, is_root: true, receiver_id: WidgetId.enum.WIDGET_FOLDER});
+    }
+
+    const click_cur_dir = (event) => {
+      const dataset = event.currentTarget.closest(".cur-dir").dataset;
+      const root_path = dataset.path.split("/")[0] + "/";
+      send_list_directory({path: root_path, select_path: root_path, is_root: true, receiver_id: WidgetId.enum.WIDGET_FOLDER});
+    }
+
+    const copy_gallery_filename = (event) => {
       const selectedText = window.getSelection().toString();
       const modifiedText = selectedText.replace(/\u200B/g, '');
       const clipboardData = event.clipboardData || window.clipboardData;
@@ -95,11 +199,7 @@
       event.preventDefault();
     }
 
-    function change_filename(name) {
-      return name.replace(/(.{5})(?=.)/g, '$1\u200B');
-    } 
-
-    change_slider = (event) => {
+    const change_slider = (event) => {
       document.querySelectorAll('.gallery .media').forEach(function (element) {
         element.style.width = event.target.value + '%';
       })
@@ -109,20 +209,19 @@
       })
     }
 
-    
-    list_directory = (params) => {
-      const jres = JSON.parse(params);
-      const res = FolderRes.parse(jres);
-      g_res = res;
-
-      if (g_gallery_type == GalleryType.enum.LAYOUT_LIST) {
-        list_type_list_directory();
-      } else if(g_gallery_type == GalleryType.enum.LAYOUT_GALLERY) {
-        gallery_type_list_directory();
+    const change_layout = () => {
+      if(g_gallery_type == GalleryType.enum.LAYOUT_LIST) {
+        document.querySelector(".layout-list").classList.add("on");
+        document.querySelector(".layout-gallery").classList.remove("on");
+        list_directory_of_list_type();
+      } else {
+        document.querySelector(".layout-list").classList.remove("on");
+        document.querySelector(".layout-gallery").classList.add("on");
+        list_directory_of_gallery_type();
       }
     }
 
-    show_gallery_type = () => {
+    const show_layout = () => {
       if (g_gallery_type == GalleryType.enum.LAYOUT_LIST) {
         document.querySelector(".filelist").style.display = "";
         document.querySelector(".fileheader").style.display = "";
@@ -137,13 +236,13 @@
 
     }
 
-    show_top = () => {
+    const show_top = () => {
       const res = g_res;
-      const cur_dir_icon = document.querySelector(".cur-dir i");
-      cur_dir_icon.dataset.path = res.path;
-
-      const cur_dir_browser = document.querySelector(".cur-dir .dir-browser");
-      cur_dir_browser.dataset.path = res.path;
+      const cur_dir = document.querySelector(".cur-dir");
+      cur_dir.dataset.path = res.path;
+      
+      const cur_dir_icon = cur_dir.querySelector("i");
+      const cur_dir_browser = cur_dir.querySelector(".dir-browser");
       cur_dir_browser.addEventListener("click", click_cur_dir_browser);
 
       const cur_dir_all = document.querySelector(".cur-dir .dir-all");
@@ -167,9 +266,9 @@
 
     }
 
-    list_type_list_directory = () => {
-      console.log("list_type_list_directory");
-      show_gallery_type();
+    const list_directory_of_list_type = () => {
+      console.log("list_directory_of_list_type");
+      show_layout();
       show_top();
       const res = g_res;
 
@@ -192,7 +291,7 @@
         div_row.innerHTML = `
           <div class="cell file">
             <span class="i-file">
-              <span class="icon"><i class="fa-solid ${icon}"></i><span>
+              <span class="icon"><i class="fa-solid ${icon}"></i></span>
               <span class="filename"></span>
             </span>
           </div>
@@ -202,6 +301,7 @@
           <div class="cell date">${item.mtime}</div>
         `
         const div_i_file = div_row.querySelector(".i-file");
+        const div_icon = div_row.querySelector(".icon");
         const div_filename = div_row.querySelector(".filename");
         const div_size = div_row.querySelector(".cell.size");
         const div_browser = div_row.querySelector(".cell.browser");
@@ -209,18 +309,20 @@
         div_size.title = item.size;
         div_filename.innerHTML = item.name;
         div_i_file.title = item.name;
-        div_i_file.addEventListener("dblclick", click_path);
+        div_file_table.appendChild(div_row);
+        if(item.is_dir) {
+          div_icon.addEventListener("click", click_path);
+        }
+        div_filename.addEventListener("dblclick", click_path);
         div_browser.addEventListener("click", click_browser);
 
-        div_file_table.appendChild(div_row);
       }
 
     }
 
-
-    gallery_type_list_directory = () => {
-      console.log("gallery_type_list_directory");
-      show_gallery_type();
+    const list_directory_of_gallery_type = () => {
+      console.log("list_directory_of_gallery_type");
+      show_layout();
       show_top();
       const res = g_res;
       const div_gallery = document.querySelector(".gallery");
@@ -282,117 +384,15 @@
       }
     }
 
-    get_state = (params) => {
-      const jres = JSON.parse(params);
-      const res = GetStateRes.parse(jres);
-      console.log("get_state:", res.value);
-      if (res.key == StateKey.enum.PATH) {
-        g_path = res.value;
-        send_list_directory({ path: g_path, is_root: false });
-      } else if (res.key == StateKey.enum.GALLERY_TYPE) {
-        g_gallery_type = res.value;
-        change_layout();
-      }
-    }
+    const change_filename = (name) => {
+      return name.replace(/(.{5})(?=.)/g, '$1\u200B');
+    } 
 
-    set_state = (params) => {
-      const jres = JSON.parse(params);
-      const res = SetStateRes.parse(jres);
-      console.log("set_state:", res.value);
-      if (res.key == StateKey.enum.PATH) {
-        g_path = res.value;
-      } else if (res.key == StateKey.enum.GALLERY_TYPE) {
-        g_gallery_type = res.value;
-        change_layout();
-      }
-    }
-
-    change_layout = () => {
-      if(g_gallery_type == GalleryType.enum.LAYOUT_LIST) {
-        document.querySelector(".layout-list").classList.add("on");
-        document.querySelector(".layout-gallery").classList.remove("on");
-        list_type_list_directory();
-      } else {
-        document.querySelector(".layout-list").classList.remove("on");
-        document.querySelector(".layout-gallery").classList.add("on");
-        gallery_type_list_directory();
-      }
-    }
-
-
-    open_path = (params) => {
-      console.log("open_path");
-      const jres = JSON.parse(params);
-      const res = OpenPathRes.parse(jres);
-      send_list_directory({ path: res.path, is_root: false });
-    }
-    
-    click_path = (event) => {
-      window.getSelection().removeAllRanges();
-      const target = event.currentTarget;
-      const div_row = target.parentElement.parentElement;
-      const item = div_row.dataset;
-      if (item.is_dir == "true"){
-        send_list_directory({ path: item.path});
-      } else {
-        send_open_path({ path: item.path, open_path_type: OpenPathType.enum.APPLICATION });
-      }
-    }
-
-    click_path_gallery = (event) => {
-      window.getSelection().removeAllRanges();
-      const div_cell = event.currentTarget;
-      const item = div_cell.dataset;
-      if (item.is_dir == "true"){
-        send_list_directory({ path: item.path});
-      } else {
-        send_open_path({ path: item.path, open_path_type: OpenPathType.enum.APPLICATION });
-      }
-    }
-
-    click_browser = (event) => {
-      window.getSelection().removeAllRanges();
-      const target = event.currentTarget;
-      const div_row = target.parentElement;
-      const item = div_row.dataset;
-      send_open_path({ path: item.path, open_path_type: OpenPathType.enum.BROWSER });
-    }
-
-    click_layout_list = (event) => {
-      console.log("click .layout-list");
-      send_set_state({key: StateKey.enum.GALLERY_TYPE, value: GalleryType.enum.LAYOUT_LIST});
-    };
-    
-    click_layout_gallery = (event) => {
-      console.log("click .layout-gallery");
-      send_set_state({key: StateKey.enum.GALLERY_TYPE, value: GalleryType.enum.LAYOUT_GALLERY});
-    };
-
-    click_cur_dir_browser = (event) => {
-      window.getSelection().removeAllRanges();
-      const target = event.currentTarget;
-      const item = target.dataset;
-      send_open_path({ path: item.path, open_path_type: OpenPathType.enum.BROWSER });
-    }
-
-    click_cur_dir_part = (event) => {
-      console.log('click_cur_dir_part');
-      const dir_sub = event.currentTarget.dataset.dir_sub;
-      const root_path = event.currentTarget.dataset.path.split("/")[0] + "/";
-      send_list_directory({path: root_path, select_path: dir_sub, is_root: true, receiver_id: WidgetId.enum.WIDGET_FOLDER});
-    }
-
-    click_cur_dir = (event) => {
-      const root_path = event.currentTarget.dataset.path.split("/")[0] + "/";
-      send_list_directory({path: root_path, select_path: root_path, is_root: true, receiver_id: WidgetId.enum.WIDGET_FOLDER});
-    }
-
-    function formatFileSize(bytes) {
+    const formatFileSize = (bytes) => {
       if (bytes === 0) return '0KB';
       const kb = Math.floor(bytes / 1024);
       return kb.toLocaleString('en-US') + 'KB';
     }
-
 
   </script>
 </head>
