@@ -204,44 +204,47 @@ class PyBrowser(wx.Frame):
             )
         else:
             items = []
-            for item in root_path.iterdir():
-                # if not item.exists():
-                #     continue
-                # if item.is_junction():
-                #     continue
-                # if item.is_symlink():
-                #     continue
-                # if is_hidden(item):
-                #     continue
-                if not os.access(item.absolute(), os.R_OK):
-                    continue
-                if item.is_dir():
-                    has_children = False
-                    try:
-                        has_children = any(item.iterdir())
-                    except:
+            try:
+                for item in root_path.iterdir():
+                    # if not item.exists():
+                    #     continue
+                    # if item.is_junction():
+                    #     continue
+                    # if item.is_symlink():
+                    #     continue
+                    # if is_hidden(item):
+                    #     continue
+                    if not os.access(item.absolute(), os.R_OK):
                         continue
-                    items.append(PathItem(
-                        is_dir=True,
-                        name=item.name,
-                        path=item.absolute().as_posix(),
-                        ext=item.suffix.lower(),
-                        mime=get_mimetype(item.name),
-                        has_children=has_children,
-                        size=item.stat().st_size,
-                        mtime=datetime.fromtimestamp(item.stat().st_mtime).strftime("%Y-%m-%d %H:%M:%S"),
-                    ))
-                else:
-                    items.append(PathItem(
-                        is_dir=False,
-                        name=item.name,
-                        path=item.absolute().as_posix(),
-                        ext=item.suffix.lower(),
-                        mime=get_mimetype(item.name),
-                        has_children=False,
-                        size=item.stat().st_size,
-                        mtime=datetime.fromtimestamp(item.stat().st_mtime).strftime("%Y-%m-%d %H:%M:%S"),
-                    ))
+                    if item.is_dir():
+                        has_children = False
+                        try:
+                            has_children = any(item.iterdir())
+                        except:
+                            has_children = True
+                        items.append(PathItem(
+                            is_dir=True,
+                            name=item.name,
+                            path=item.absolute().as_posix(),
+                            ext=item.suffix.lower(),
+                            mime=get_mimetype(item.name),
+                            has_children=has_children,
+                            size=item.stat().st_size,
+                            mtime=datetime.fromtimestamp(item.stat().st_mtime).strftime("%Y-%m-%d %H:%M:%S"),
+                        ))
+                    else:
+                        items.append(PathItem(
+                            is_dir=False,
+                            name=item.name,
+                            path=item.absolute().as_posix(),
+                            ext=item.suffix.lower(),
+                            mime=get_mimetype(item.name),
+                            has_children=False,
+                            size=item.stat().st_size,
+                            mtime=datetime.fromtimestamp(item.stat().st_mtime).strftime("%Y-%m-%d %H:%M:%S"),
+                        ))
+            finally:
+                pass
             res = FolderRes(
                 sender_id=req.sender_id,
                 receiver_id=req.receiver_id,
