@@ -11,11 +11,16 @@
     <script src="widget_folder.js"></script>
     <style>
       body { margin: 0; padding: 0; height: 100vh; display: flex;}
+      .top-bar {position: fixed; top:0px; width: 100%; background-color: white;}
+      .top { display: flex; padding: 0 0 0 5px; gap: 5px; }
+      .top .link { padding: 2px; color: #f4a261;}
+      .top .link:hover { background-color: #bad0e4; }
       .container { padding:0; margin:0; font-size: 0.8em}
-      .tree { padding: 0 0 0 0px; margin: 0; }
+      .tree { padding: 25px 0 0 0px; margin: 0; }
       .tree ul { padding: 0 0 0 8px; margin: 0;}
       .tree li { list-style: none; padding: 0; margin:0; white-space: nowrap;}
       .tree .item { padding: 0 3px 1px 3px; margin: 0; cursor: pointer; display: inline-block;}
+      .tree .item:hover { background-color: #bad0e4; }
       .tree li.selected>div {background-color: #bad0e4;}
       .tree .item .subitem { padding: 0; margin: 0; display: inline-block;}
       .fa-folder, .fa-folder-plus { color: #f4a261; margin-right: 5px;}
@@ -34,32 +39,39 @@
       window.on_load = (params) => {
         const jres = JSON.parse(params);
         console.log("on_load");
-        send_list_directory({path: null, is_root: true});
+        send_get_link({});
+        send_list_directory({path: null, depth: 0});
       }
       
       window.list_directory = (params) => {
-        const jres = JSON.parse(params);
         console.log("list_directory");
+        const jres = JSON.parse(params);
         const res = FolderRes.parse(jres);
         const tree_node = document.querySelector("#file-tree");
 
-        const parent_node = res.is_root ? tree_node : document.querySelector("li[data-path='" + encodeURIComponent(res.path) + "']");
-        if (res.is_root) {
-          tree_node.innerHTML = "";
-        } 
+
+        let items = [];
         const ul = document.createElement("ul");
-        parent_node.appendChild(ul);
-        
-        for (const item of res.items) {
+        if (res.depth == 0) {
+          tree_node.innerHTML = "";
+          items = [res.item];
+          tree_node.appendChild(ul);
+        } else {
+          items = res.item.items;
+          const li = document.querySelector("li[data-path='" + encodeURIComponent(res.item.path) + "']")
+          li.appendChild(ul);
+        }
+
+        for (const item of items) {
           const li = document.createElement("li");
           if (item.is_dir) {
             li.dataset.is_dir = "true";
-            li.dataset.has_children = item.has_children;
+            li.dataset.tot = item.tot;
             li.dataset.path = encodeURIComponent(item.path);
             const div_item = document.createElement("div");
             div_item.classList.add("item");
 
-            let icon = item.has_children ? "fa-folder-plus": "fa-folder"
+            let icon = item.tot != "0" ? "fa-folder-plus": "fa-folder"
             div_item.innerHTML = `
               <div class="subitem path-icon">
                 <i class="fa-solid ${icon}"></i>
@@ -71,7 +83,7 @@
             const div_path_name = div_item.querySelector(".path-name");
             div_path_name.title = item.path;
             div_path_name.innerHTML = item.name;
-            if (res.is_root) {
+            if (res.depth == 0) {
               li.classList.add("selected");
             }
             li.appendChild(div_item);
@@ -103,17 +115,34 @@
           }
           ul.appendChild(li);
         }
-
-        if (res.select_path){
+        
+        if (res.select_path && (res.depth == 0 || res.page_no == Math.floor(res.item.tot/res.page_size))){
           setTimeout(() => {
             go_path(res);
           }, 1);
         }
       }
 
+      window.get_link = (params) => {
+        console.log("get_link");
+        const jres = JSON.parse(params);
+        const res = GetLinkRes.parse(jres);
+        const div_top = document.querySelector(".top");
+        for (const item of res.items) {
+            const div_item = div_top.querySelector(`.${item.key}`);
+            div_item.dataset.path = item.value;
+            div_item.addEventListener("click", click_link);
+        }  
+      }
+
+      const click_link = (event) => {
+        const dataset = event.currentTarget.dataset;
+        send_list_directory({path: "/", select_path: dataset.path, depth: 0})
+      }
+
       const go_path = (res) => {
-        if (res.path == res.select_path){
-          const li = document.querySelector("li[data-path='" + encodeURIComponent(res.select_path) + "']");
+        const li = document.querySelector("li[data-path='" + encodeURIComponent(res.select_path) + "']");
+        if (li){
           document.querySelectorAll(".tree li").forEach(el => {
             el.classList.remove("selected");
           });
@@ -125,16 +154,14 @@
           }
           document.querySelector("li.selected>div").scrollIntoView({ behavior: 'auto', block: 'nearest', inline: 'end' });
 
-          send_list_directory({path: res.path, is_root: false})
-
         } else {
           const arr_path = res.path.split("/").filter((x) => x);
           const arr_select_path = res.select_path.split("/").filter((x) => x);
-          if (res.is_root){
-            send_list_directory({path: res.path, is_root: false, select_path: res.select_path})
+          if (res.depth == 0){
+            send_list_directory({path: res.path, depth: 1, select_path: res.select_path})
           } else {
             const next_path = arr_select_path.slice(0, arr_path.length+1).join("/");
-            send_list_directory({path: next_path, is_root: false, select_path: res.select_path})
+            send_list_directory({path: next_path, depth: 1, select_path: res.select_path})
           }
         }
       }
@@ -165,10 +192,9 @@
         if (isExpanded) {
           li.querySelectorAll("ul").forEach(ul => ul.remove());
         } else {
-          send_list_directory({path: path, is_root: false, select_path: g_select_path});
+          send_list_directory({path: path, depth: 1, select_path: g_select_path});
         }
       }
-
 
       window.addEventListener("keydown", function(event) {
         const keys = ["Enter", "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", " "]
@@ -236,6 +262,15 @@
 
   <body>
   <div class="container">
+    <div class="top-bar">
+      <div class="top">
+        <div class="link root" title="/"><i class="fa-solid fa-inbox"></i></div>
+        <div class="link home" title="Home"><i class="fa-solid fa-house-user"></i></div>
+        <div class="link down" title="Downloads"><i class="fa-solid fa-download"></i></div>
+        <div class="link docs" title="Documents"><i class="fa-solid fa-file-lines"></i></div>
+        <div></div>
+      </div>
+    </div>
     <div id="file-tree" class="tree">
     </div>
   </div>
