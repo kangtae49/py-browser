@@ -21,6 +21,7 @@ class StateKey(Enum):
     TEMPLATE = "TEMPLATE"
     GALLERY_TYPE = "GALLERY_TYPE"
     PATH = "PATH"
+    SLIDER_VAL = "SLIDER_VAL"
 
 class WidgetId(Enum):
     PY_BROWSER = "PY_BROWSER"

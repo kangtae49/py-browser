@@ -25,6 +25,7 @@ const StateKey = z.enum([
     "TEMPLATE",
     "GALLERY_TYPE",
     "PATH",
+    "SLIDER_VAL",
 ]);
 
 const WidgetId = z.enum([

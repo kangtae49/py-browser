@@ -74,15 +74,17 @@
     window.on_load = (params) => {
       const jres = JSON.parse(params);
       console.log("on_load");
-      send_get_state({ key: StateKey.enum.GALLERY_TYPE });
-      send_get_state({ key: StateKey.enum.PATH });
-      send_list_directory({ path: null, depth: 0 });
 
       document.querySelector(".layout-list").addEventListener("click", click_layout_list);
       document.querySelector(".layout-gallery").addEventListener("click", click_layout_gallery);
       
-      document.querySelector('.slider').value = 20;
+      // document.querySelector('.slider').value = 20;
       document.querySelector('.slider').addEventListener('input', change_slider);
+
+      send_get_state({ key: StateKey.enum.GALLERY_TYPE });
+      send_get_state({ key: StateKey.enum.PATH });
+      send_get_state({ key: StateKey.enum.SLIDER_VAL });
+      send_list_directory({ path: null, depth: 0 });
       
     }
 
@@ -115,6 +117,10 @@
       } else if (res.key == StateKey.enum.GALLERY_TYPE) {
         g_gallery_type = res.value;
         change_layout();
+      } else if (res.key == StateKey.enum.SLIDER_VAL) {
+        const slider = document.querySelector('.slider');
+        slider.value = res.value;
+        slider.dispatchEvent(new Event('input', { bubbles: true }));
       }
     }
 
@@ -197,6 +203,7 @@
       document.querySelectorAll('.file-cell').forEach(function (element) {
         element.style.flex = value;
       })
+      send_set_state({ key: StateKey.enum.SLIDER_VAL, value: event.target.value});
     }
 
     const change_layout = () => {
@@ -312,7 +319,7 @@
   
         }
       }
-
+      send_get_state({ key: StateKey.enum.SLIDER_VAL });
     }
 
     const list_directory_of_gallery_type = () => {
@@ -382,6 +389,7 @@
           div_gallery.appendChild(div_media);
         }
       }
+      send_get_state({ key: StateKey.enum.SLIDER_VAL });
     }
 
     const change_filename = (name) => {

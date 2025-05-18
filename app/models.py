@@ -47,15 +47,15 @@ class GetStateReq(BaseMsg):
 
 class GetStateRes(BaseMsg):
     key: StateKey
-    value: ContentTemplate | GalleryType | str
+    value: ContentTemplate | GalleryType | str 
 
 class SetStateReq(BaseMsg):
     key: StateKey
-    value: ContentTemplate | GalleryType | str
+    value: ContentTemplate | GalleryType | str 
 
 class SetStateRes(BaseMsg):
     key: StateKey
-    value: ContentTemplate | GalleryType | str
+    value: ContentTemplate | GalleryType | str 
 
 class Link(BaseModel):
     key: str

@@ -29,6 +29,7 @@ from app.widgets.widget_base import WidgetBase
 class State:
     template: ContentTemplate = ContentTemplate.CONTENT_LIST
     gallery_type: GalleryType = GalleryType.LAYOUT_LIST
+    slider_val: str = "20"
     path: str = ""
     is_dir: bool = False
 
@@ -315,7 +316,8 @@ class PyBrowser(wx.Frame):
             value = self._state.gallery_type
         elif req.key == StateKey.PATH:
             value = self._state.path
-
+        elif req.key == StateKey.SLIDER_VAL:
+            value = self._state.slider_val
         res = GetStateRes(
             sender_id=req.sender_id,
             receiver_id=req.receiver_id,
@@ -336,6 +338,13 @@ class PyBrowser(wx.Frame):
         elif req.key == StateKey.GALLERY_TYPE:
             self._state.gallery_type = req.value
             value = self._state.gallery_type
+        elif req.key == StateKey.PATH:
+            self._state.path = req.value
+            value = self._state.path
+        elif req.key == StateKey.SLIDER_VAL:
+            self._state.slider_val = req.value
+            value = self._state.slider_val
+
         res = SetStateRes(
             sender_id=req.sender_id,
             receiver_id=req.receiver_id,
