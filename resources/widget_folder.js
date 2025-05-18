@@ -4,9 +4,9 @@ send_list_directory = ({
     action=ActionId.enum.LIST_DIRECTORY,
     path=null,
     select_path=null,
-    is_root=false
+    depth=1
 } = {}) => { 
-    Pb.sendMessage(FolderReq.parse({ sender_id, receiver_id, action, path, select_path,is_root,}));}
+    Pb.sendMessage(FolderReq.parse({ sender_id, receiver_id, action, path, select_path, depth,}));}
 
 send_open_path = ({
     sender_id=WidgetId.enum.WIDGET_FOLDER,

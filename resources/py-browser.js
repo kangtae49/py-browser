@@ -54,7 +54,7 @@ const BaseMsg = z.object({
 const FolderReq = BaseMsg.extend({
     path: z.string().nullable(),
     select_path: z.string().nullable(),
-    is_root: z.boolean(),
+    depth: z.number(),
 });
 
 const OpenPathReq = BaseMsg.extend({
@@ -67,22 +67,27 @@ const OpenPathRes = BaseMsg.extend({
     path: z.string(),
 });
 
-const PathItem = z.object({
-    is_dir: z.boolean(),
-    name: z.string(),
-    path: z.string(),
-    ext: z.string(),
-    mime: z.string(),
-    has_children: z.boolean().default(false),
-    mtime: z.number(),
-    size: z.number(),
-});
+const PathItem = z.lazy(() =>
+    z.object({
+        is_dir: z.boolean(),
+        name: z.string(),
+        path: z.string(),
+        ext: z.string(),
+        mime: z.string(),
+        mtime: z.number(),
+        size: z.number(),
+        tot: z.number(),
+        items: z.array(PathItem),
+    })
+);
 
 const FolderRes = BaseMsg.extend({
     path: z.string().nullable(),
     select_path: z.string().nullable(),
-    is_root: z.boolean(),
-    items: z.array(PathItem),
+    depth: z.number(),
+    page_no: z.number(),
+    page_size: z.number(),
+    item: PathItem,
 });
 
 const GetStateReq = BaseMsg.extend({

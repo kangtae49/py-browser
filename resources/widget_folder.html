@@ -39,7 +39,7 @@
         const jres = JSON.parse(params);
         console.log("on_load");
         send_get_link({});
-        send_list_directory({path: null, is_root: true});
+        send_list_directory({path: null, depth: 0});
       }
       
       window.list_directory = (params) => {
@@ -48,23 +48,29 @@
         const res = FolderRes.parse(jres);
         const tree_node = document.querySelector("#file-tree");
 
-        const parent_node = res.is_root ? tree_node : document.querySelector("li[data-path='" + encodeURIComponent(res.path) + "']");
-        if (res.is_root) {
-          tree_node.innerHTML = "";
-        } 
+
+        let items = [];
         const ul = document.createElement("ul");
-        parent_node.appendChild(ul);
-        
-        for (const item of res.items) {
+        if (res.depth == 0) {
+          tree_node.innerHTML = "";
+          items = [res.item];
+          tree_node.appendChild(ul);
+        } else {
+          items = res.item.items;
+          const li = document.querySelector("li[data-path='" + encodeURIComponent(res.item.path) + "']")
+          li.appendChild(ul);
+        }
+
+        for (const item of items) {
           const li = document.createElement("li");
           if (item.is_dir) {
             li.dataset.is_dir = "true";
-            li.dataset.has_children = item.has_children;
+            li.dataset.tot = item.tot;
             li.dataset.path = encodeURIComponent(item.path);
             const div_item = document.createElement("div");
             div_item.classList.add("item");
 
-            let icon = item.has_children ? "fa-folder-plus": "fa-folder"
+            let icon = item.tot != "0" ? "fa-folder-plus": "fa-folder"
             div_item.innerHTML = `
               <div class="subitem path-icon">
                 <i class="fa-solid ${icon}"></i>
@@ -76,7 +82,7 @@
             const div_path_name = div_item.querySelector(".path-name");
             div_path_name.title = item.path;
             div_path_name.innerHTML = item.name;
-            if (res.is_root) {
+            if (res.depth == 0) {
               li.classList.add("selected");
             }
             li.appendChild(div_item);
@@ -108,8 +114,8 @@
           }
           ul.appendChild(li);
         }
-
-        if (res.select_path){
+        
+        if (res.select_path && (res.depth == 0 || res.page_no == Math.floor(res.item.tot/res.page_size))){
           setTimeout(() => {
             go_path(res);
           }, 1);
@@ -130,7 +136,7 @@
 
       const click_link = (event) => {
         const dataset = event.currentTarget.dataset;
-        send_list_directory({path: "/", select_path: dataset.path, is_root: true})
+        send_list_directory({path: "/", select_path: dataset.path, depth: 0})
       }
 
       const go_path = (res) => {
@@ -150,11 +156,11 @@
         } else {
           const arr_path = res.path.split("/").filter((x) => x);
           const arr_select_path = res.select_path.split("/").filter((x) => x);
-          if (res.is_root){
-            send_list_directory({path: res.path, is_root: false, select_path: res.select_path})
+          if (res.depth == 0){
+            send_list_directory({path: res.path, depth: 1, select_path: res.select_path})
           } else {
             const next_path = arr_select_path.slice(0, arr_path.length+1).join("/");
-            send_list_directory({path: next_path, is_root: false, select_path: res.select_path})
+            send_list_directory({path: next_path, depth: 1, select_path: res.select_path})
           }
         }
       }
@@ -185,7 +191,7 @@
         if (isExpanded) {
           li.querySelectorAll("ul").forEach(ul => ul.remove());
         } else {
-          send_list_directory({path: path, is_root: false, select_path: g_select_path});
+          send_list_directory({path: path, depth: 1, select_path: g_select_path});
         }
       }
 

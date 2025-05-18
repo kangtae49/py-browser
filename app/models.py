@@ -12,7 +12,7 @@ class BaseMsg(BaseModel):
 class FolderReq(BaseMsg):
     path: str | None = None
     select_path: str | None = None
-    is_root: bool
+    depth: int
 
 class OpenPathReq(BaseMsg):
     open_path_type: OpenPathType = OpenPathType.AUTO
@@ -28,16 +28,19 @@ class PathItem(BaseModel):
     path: str
     ext: str
     mime: str
-    has_children: bool = False
     mtime: float
     size: int
+    tot: int
+    items: List["PathItem"]
 
 
 class FolderRes(BaseMsg):
     path: str | None = None
     select_path: str | None = None
-    is_root: bool
-    items: List[PathItem]
+    depth: int
+    page_no: int
+    page_size: int = 20
+    item: PathItem
 
 class GetStateReq(BaseMsg):
     key: StateKey
@@ -71,7 +74,7 @@ def createFolderReq (
         action=ActionId.LIST_DIRECTORY,
         path=None,
         select_path=None,
-        is_root=True
+        depth=0
     ):
     return FolderReq(
         sender_id=WidgetId.PY_BROWSER,
@@ -79,5 +82,5 @@ def createFolderReq (
         action=ActionId.LIST_DIRECTORY,
         path=path,
         select_path=select_path,
-        is_root=True,
+        depth=depth,
     )

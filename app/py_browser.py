@@ -1,5 +1,5 @@
 import os
-import mimetypes
+import math
 import wx
 from dataclasses import dataclass
 from pathlib import Path
@@ -8,6 +8,8 @@ import wx.aui as aui
 from wx.html2 import WebView 
 
 from app.utils.file_utils import get_default_root_path, get_resource_path, get_mimetype_head, get_mimetype
+from app.utils.file_utils import count_path
+
 from app.enums import WidgetId, ContentTemplate, GalleryType, StateKey, OpenPathType
 from app.models import createFolderReq
 from app.models import BaseMsg
@@ -131,7 +133,7 @@ class PyBrowser(wx.Frame):
                       style=wx.DD_DEFAULT_STYLE | wx.DD_DIR_MUST_EXIST) as dlg:
             if dlg.ShowModal() == wx.ID_OK:
                 selected_path = dlg.GetPath()
-                self.runApi(createFolderReq(path=selected_path, is_root=True))
+                self.runApi(createFolderReq(path=selected_path, depth=0))
 
     def getWebview(self, widget_id: WidgetId) -> WebView:
         return self._webviews.get(widget_id)
@@ -180,85 +182,72 @@ class PyBrowser(wx.Frame):
         else:
             select_path = req.select_path
 
-            
-        # print(req)
-        if req.is_root:
-            res = FolderRes(
-                sender_id=req.sender_id,
-                receiver_id=req.receiver_id,
-                action=req.action,
+        tot = count_path(root_path)
+        page_size = 5000
+        res = FolderRes(
+            sender_id=req.sender_id,
+            receiver_id=req.receiver_id,
+            action=req.action,
+            path=root_path.absolute().as_posix(),
+            select_path=select_path.absolute().as_posix() if select_path is not None else None,
+            depth=req.depth,
+            page_no=0,
+            page_size=page_size,
+            item= PathItem(
+                is_dir=True,
+                name=root_path.name or root_path.absolute().as_posix(),
                 path=root_path.absolute().as_posix(),
-                select_path=select_path.absolute().as_posix() if select_path is not None else None,
-                is_root=True,
-                items=[
-                    PathItem(
-                        is_dir=True,
-                        name=root_path.name or root_path.absolute().as_posix(),
-                        path=root_path.absolute().as_posix(),
-                        ext=root_path.suffix.lower(),
-                        mime=get_mimetype(root_path.name),
-                        has_children=True,
-                        size=root_path.stat().st_size,
-                        mtime=root_path.stat().st_mtime,
-                        # mtime=datetime.fromtimestamp(root_path.stat().st_mtime).strftime("%Y-%m-%d %H:%M:%S"),
-                    )
-                ]
+                ext=root_path.suffix.lower(),
+                mime=get_mimetype(root_path.name),
+                size=root_path.stat().st_size,
+                mtime=root_path.stat().st_mtime,
+                tot=tot,
+                items = []
             )
-        else:
+        )
+        if tot == 0 or res.depth == 0:
+            self.runScriptAsync(res)
+            return
+  
+        
+        items = []
+        idx = 0
+        for item in root_path.iterdir():
+            # if not item.exists():
+            #     continue
+            # if item.is_junction():
+            #     continue
+            # if item.is_symlink():
+            #     continue
+            # if is_hidden(item):
+            #     continue
+            # if not os.access(item.absolute(), os.R_OK):
+            #     continue
+            page_no, rem = divmod(idx, page_size)
+
+            items.append(PathItem(
+                is_dir=item.is_dir(),
+                name=item.name,
+                path=item.absolute().as_posix(),
+                ext=item.suffix.lower(),
+                mime=get_mimetype(item.name),
+                size=item.stat().st_size,
+                mtime=item.stat().st_mtime,
+                tot=count_path(item),
+                items=[],
+            ))
+            if rem == page_size-1:
+                res.page_no = page_no
+                res.item.items = items
+                self.runScriptAsync(res)
+                items = []
+            idx += 1
+        if items:
+            page_no = math.ceil(res.item.tot / page_size) - 1 
+            res.page_no = page_no
+            res.item.items = items
+            self.runScriptAsync(res)
             items = []
-            try:
-                for item in root_path.iterdir():
-                    # if not item.exists():
-                    #     continue
-                    # if item.is_junction():
-                    #     continue
-                    # if item.is_symlink():
-                    #     continue
-                    # if is_hidden(item):
-                    #     continue
-                    if not os.access(item.absolute(), os.R_OK):
-                        continue
-                    if item.is_dir():
-                        has_children = False
-                        try:
-                            has_children = any(item.iterdir())
-                        except:
-                            has_children = True
-                        items.append(PathItem(
-                            is_dir=True,
-                            name=item.name,
-                            path=item.absolute().as_posix(),
-                            ext=item.suffix.lower(),
-                            mime=get_mimetype(item.name),
-                            has_children=has_children,
-                            size=item.stat().st_size,
-                            mtime=item.stat().st_mtime,
-                            # mtime=datetime.fromtimestamp(item.stat().st_mtime).strftime("%Y-%m-%d %H:%M:%S"),
-                        ))
-                    else:
-                        items.append(PathItem(
-                            is_dir=False,
-                            name=item.name,
-                            path=item.absolute().as_posix(),
-                            ext=item.suffix.lower(),
-                            mime=get_mimetype(item.name),
-                            has_children=False,
-                            size=item.stat().st_size,
-                            mtime=item.stat().st_mtime,
-                            # mtime=datetime.fromtimestamp(item.stat().st_mtime).strftime("%Y-%m-%d %H:%M:%S"),
-                        ))
-            finally:
-                pass
-            res = FolderRes(
-                sender_id=req.sender_id,
-                receiver_id=req.receiver_id,
-                action=req.action,
-                path=root_path.resolve().as_posix(),
-                select_path=select_path.resolve().as_posix() if select_path is not None else None,
-                is_root=req.is_root,
-                items=items
-            )
-        self.runScriptAsync(res)
 
 
     def open_path(self, param: str | OpenPathReq):

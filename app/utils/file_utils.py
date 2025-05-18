@@ -44,3 +44,12 @@ def get_mimetype_head(name):
 def get_mimetype(name):
     mime_type, _ = mimetypes.guess_type(name)
     return mime_type if mime_type is not None else ""
+
+def count_path(path: Path) -> int:
+    if path.is_dir():
+        try:
+            return sum(1 for item in path.iterdir())
+        except:
+            return 0
+    else:
+        return 0
