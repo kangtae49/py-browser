@@ -134,8 +134,8 @@
       }
 
       const go_path = (res) => {
-        if (res.path == res.select_path){
-          const li = document.querySelector("li[data-path='" + encodeURIComponent(res.select_path) + "']");
+        const li = document.querySelector("li[data-path='" + encodeURIComponent(res.select_path) + "']");
+        if (li){
           document.querySelectorAll(".tree li").forEach(el => {
             el.classList.remove("selected");
           });
@@ -146,8 +146,6 @@
             return;
           }
           document.querySelector("li.selected>div").scrollIntoView({ behavior: 'auto', block: 'nearest', inline: 'end' });
-
-          send_list_directory({path: res.path, is_root: false})
 
         } else {
           const arr_path = res.path.split("/").filter((x) => x);

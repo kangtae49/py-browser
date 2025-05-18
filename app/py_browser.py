@@ -199,7 +199,8 @@ class PyBrowser(wx.Frame):
                         mime=get_mimetype(root_path.name),
                         has_children=True,
                         size=root_path.stat().st_size,
-                        mtime=datetime.fromtimestamp(root_path.stat().st_mtime).strftime("%Y-%m-%d %H:%M:%S"),
+                        mtime=root_path.stat().st_mtime,
+                        # mtime=datetime.fromtimestamp(root_path.stat().st_mtime).strftime("%Y-%m-%d %H:%M:%S"),
                     )
                 ]
             )
@@ -231,7 +232,8 @@ class PyBrowser(wx.Frame):
                             mime=get_mimetype(item.name),
                             has_children=has_children,
                             size=item.stat().st_size,
-                            mtime=datetime.fromtimestamp(item.stat().st_mtime).strftime("%Y-%m-%d %H:%M:%S"),
+                            mtime=item.stat().st_mtime,
+                            # mtime=datetime.fromtimestamp(item.stat().st_mtime).strftime("%Y-%m-%d %H:%M:%S"),
                         ))
                     else:
                         items.append(PathItem(
@@ -242,7 +244,8 @@ class PyBrowser(wx.Frame):
                             mime=get_mimetype(item.name),
                             has_children=False,
                             size=item.stat().st_size,
-                            mtime=datetime.fromtimestamp(item.stat().st_mtime).strftime("%Y-%m-%d %H:%M:%S"),
+                            mtime=item.stat().st_mtime,
+                            # mtime=datetime.fromtimestamp(item.stat().st_mtime).strftime("%Y-%m-%d %H:%M:%S"),
                         ))
             finally:
                 pass

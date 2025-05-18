@@ -29,7 +29,7 @@ class PathItem(BaseModel):
     ext: str
     mime: str
     has_children: bool = False
-    mtime: str
+    mtime: float
     size: int
 
 

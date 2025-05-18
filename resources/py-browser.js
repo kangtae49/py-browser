@@ -74,8 +74,8 @@ const PathItem = z.object({
     ext: z.string(),
     mime: z.string(),
     has_children: z.boolean().default(false),
-    mtime: z.string(),
-    size: z.number().int(),
+    mtime: z.number(),
+    size: z.number(),
 });
 
 const FolderRes = BaseMsg.extend({

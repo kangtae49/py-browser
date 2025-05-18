@@ -62,8 +62,10 @@
     let g_gallery_type = null;
     let g_path = null;
     let g_res = null;
-
+    let g_date_formatter = null;
+    
     Pb.addListener((params) => {
+      g_date_formatter = getDateFormatter();
       const jres = JSON.parse(params);
       const res = BaseMsg.parse(jres);
       window[res.action.toLowerCase()](params);
@@ -279,7 +281,7 @@
           <div class="cell browser"><i class="fa-solid fa-globe"></i></div>
           <div class="cell size"></div>
           <div class="cell ext">${item.ext}</div>
-          <div class="cell date">${item.mtime}</div>
+          <div class="cell date">${toDate(item.mtime)}</div>
         `
         const div_i_file = div_row.querySelector(".i-file");
         const div_icon = div_row.querySelector(".icon");
@@ -377,6 +379,28 @@
       if (bytes === 0) return '0KB';
       const kb = Math.floor(bytes / 1024);
       return kb.toLocaleString('en-US') + 'KB';
+    }
+
+    const getDateFormatter = () => {
+      const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+      const formatter = new Intl.DateTimeFormat('ko-KR', {
+        timeZone: timeZone,
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: false
+      });
+      return formatter;
+    } 
+
+    const toDate = (t) => {
+      const date = new Date(t * 1000);
+      let formatted = g_date_formatter.format(date);
+      formatted = formatted.replace(/\s+/g, "").split(".");
+      return formatted.slice(0, 3).join("-") + " " + formatted.slice(-1)[0]
     }
 
   </script>
