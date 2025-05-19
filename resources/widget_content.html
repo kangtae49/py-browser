@@ -91,6 +91,13 @@
       const jres = JSON.parse(params);
       const res = FolderRes.parse(jres);
       console.log("page_no: " + res.page_no);
+
+      setTimeout( async () => {
+        async_list_directory(res);
+      }, 0);
+    }
+
+    const async_list_directory = async (res) => {
       if (res.page_no == 0) {
         g_res = new Array(Math.ceil(res.item.tot/res.page_size)).fill(null); 
       }
@@ -101,6 +108,7 @@
       } else if(g_state.gallery_type == GalleryType.enum.LAYOUT_GALLERY) {
         list_directory_part_of_gallery_type(res);
       }
+
     }
 
 
@@ -184,12 +192,16 @@
     }
 
     const change_slider = (event) => {
-      console.log("change_slider")
+      console.log("change_slider");
+      if (g_res.some((x) => x == null)){
+        return;
+      }
+
       if (g_state.slider_val != event.target.value){
         document.querySelectorAll('.gallery .part>div').forEach(function (element) {
           element.style.width = event.target.value + '%';
-        })
-
+          g_state.slider_val = event.target.value;
+        });
         send_set_state({ key: StateKey.enum.SLIDER_VAL, value: event.target.value});
       }
     }
@@ -250,7 +262,7 @@
 
     }
 
-    const list_directory_part_of_list_type = (res) => {
+    const list_directory_part_of_list_type = async (res) => {
       const total_pages = Math.ceil(res.item.tot/res.page_size);
       document.querySelector(`.part[data-page_no="${res.page_no}"]`)?.remove();
 
@@ -330,7 +342,7 @@
       }
     }
 
-    const list_directory_part_of_gallery_type = (res) => {
+    const list_directory_part_of_gallery_type = async (res) => {
       const total_pages = Math.ceil(res.item.tot/res.page_size);
       document.querySelector(`.part[data-page_no="${res.page_no}"]`)?.remove();
 
@@ -351,6 +363,7 @@
       const div_part = document.createElement("div");
       div_part.classList.add("box-table", "part");
       div_part.dataset.page_no = res.page_no;
+      const width = g_state.slider_val + '%';
 
       const frag = document.createDocumentFragment();
       for (const item of res.item.items) {
@@ -365,6 +378,7 @@
 
         const div_media = document.createElement("div");
         frag.appendChild(div_media);
+        div_media.style.width = width;
         div_media.classList.add("media", "data");
         div_media.title = item.name;
         div_media.dataset.is_dir = item.is_dir;
@@ -411,9 +425,6 @@
       }
       div_part.appendChild(frag);
       document.querySelector(".gallery").appendChild(div_part);
-
-      const slider = document.querySelector('.slider');
-      slider.dispatchEvent(new Event('input', { bubbles: true }));
 
     }
 

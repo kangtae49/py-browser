@@ -175,7 +175,7 @@ class PyBrowser(wx.Frame):
             select_path = req.select_path
 
         tot = count_path(root_path)
-        page_size = 500
+        page_size = 100
         res = FolderRes(
             sender_id=req.sender_id,
             receiver_id=req.receiver_id,
