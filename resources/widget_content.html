@@ -21,14 +21,15 @@
     .ext-container .ext-sub { display: flex; }
     .ext-container .ext-sub .ext { padding: 0 2px 0 2px; cursor: pointer;}
     .ext-container .ext-sub .ext[class*="on"] i { color: #2a9d8f; }
-    .ext-container .ext-sub .ext i { color: #d4c5ba; }    
-    .gallery { display: flex; flex-wrap: wrap; gap: 0px; padding: 75px 5px 0 5px; }
-    .gallery .media { width: 20%; display: flex; padding: 0 0px 0 1px;}
-    .gallery .media:hover { background-color: #bad0e4; cursor: pointer;}
-    .gallery .media .icon { flex: 0 0 16px;}
-    .gallery .media .file { flex: 1}
-    .gallery .media * { width: 100%; height: 100%; object-fit: scale-down; /* object-fit: contain; */ }
-    .gallery .media .file { width: 100%; height: 100%; overflow: hidden; text-overflow: ellipsis; }
+    .ext-container .ext-sub .ext i { color: #d4c5ba; }
+    .gallery {padding: 75px 5px 0 5px;}    
+    .box-table { display: flex; flex-wrap: wrap; gap: 0px;  }
+    .box-table .media { width: 20%; display: flex; padding: 0 0px 0 1px;}
+    .box-table .media:hover { background-color: #bad0e4; cursor: pointer;}
+    .box-table .media .icon { flex: 0 0 16px;}
+    .box-table .media .file { flex: 1}
+    .box-table .media * { width: 100%; height: 100%; object-fit: scale-down; /* object-fit: contain; */ }
+    .box-table .media .file { width: 100%; height: 100%; overflow: hidden; text-overflow: ellipsis; }
     .fileheader { padding: 2px 5px 2px 5px; background-color: #f0f0f0; font-weight: bold;  }
     .filelist { padding: 75px 5px 0 5px; }
     .file-table { display: flex; flex-direction: column;  font-family: sans-serif; }
@@ -76,7 +77,7 @@
       console.log("on_load");
       const res = OnLoadRes.parse(jres);
       g_state = res.state;
-
+      console.log(res.state);
       send_list_directory({ path: res.state.path, depth: 1 });
 
       document.querySelector(".layout-list").addEventListener("click", click_layout_list);
@@ -95,13 +96,10 @@
       }
       g_res[res.page_no] = res;
 
-      if (g_res.some((x) => x == null)){
-        return;
-      }
       if (g_state.gallery_type == GalleryType.enum.LAYOUT_LIST) {
-        list_directory_of_list_type();
+        list_directory_part_of_list_type(res);
       } else if(g_state.gallery_type == GalleryType.enum.LAYOUT_GALLERY) {
-        list_directory_of_gallery_type();
+        list_directory_part_of_gallery_type(res);
       }
     }
 
@@ -188,13 +186,10 @@
     const change_slider = (event) => {
       console.log("change_slider")
       if (g_state.slider_val != event.target.value){
-        document.querySelectorAll('.gallery .media').forEach(function (element) {
+        document.querySelectorAll('.gallery .part>div').forEach(function (element) {
           element.style.width = event.target.value + '%';
         })
 
-        document.querySelectorAll('.file-cell').forEach(function (element) {
-          element.style.flex = value;
-        })
         send_set_state({ key: StateKey.enum.SLIDER_VAL, value: event.target.value});
       }
     }
@@ -255,64 +250,168 @@
 
     }
 
+    const list_directory_part_of_list_type = (res) => {
+      const total_pages = Math.ceil(res.item.tot/res.page_size);
+      document.querySelector(`.part[data-page_no="${res.page_no}"]`)?.remove();
+
+      if (res.page_no == 0){
+        draw_layout_icon(GalleryType.enum.LAYOUT_LIST);
+        show_layout(GalleryType.enum.LAYOUT_LIST);
+        show_top();
+        const parts = document.querySelectorAll(".part");
+        for (const part of parts){
+          if(part.parentElement.classList.contains(".gallery")){
+            part.remove()
+          } else if (part.dataset.page_no >= total_pages){
+            part.remove();
+          }
+        }
+      }
+
+      const div_part = document.createElement("div");
+      div_part.classList.add("file-table", "part");
+      div_part.dataset.page_no = res.page_no;
+
+      const frag = document.createDocumentFragment();
+      for (const item of res.item.items) {
+        let icon = "fa-file";
+        if (item.is_dir && item.tot > 0){
+          icon = "fa-folder-plus";
+        } else if (item.is_dir && item.tot == 0) {
+          icon = "fa-folder";
+        } else {
+          icon = "fa-file";
+        }
+        const div_row = document.createElement("div");
+        frag.appendChild(div_row);
+        div_row.classList.add("file-row", "data");
+        div_row.dataset.path = item.path;
+        div_row.dataset.is_dir = item.is_dir;
+        div_row.innerHTML = `
+          <div class="cell file">
+            <span class="i-file">
+              <span class="icon"><i class="fa-solid ${icon}"></i></span>
+              <span class="filename"></span>
+            </span>
+          </div>
+          <div class="cell browser"><i class="fa-solid fa-globe"></i></div>
+          <div class="cell size"></div>
+          <div class="cell ext">${item.ext}</div>
+          <div class="cell date">${toDate(item.mtime)}</div>
+        `
+        const div_i_file = div_row.querySelector(".i-file");
+        const div_icon = div_row.querySelector(".icon");
+        const div_filename = div_row.querySelector(".filename");
+        const div_size = div_row.querySelector(".cell.size");
+        const div_browser = div_row.querySelector(".cell.browser");
+        div_size.innerHTML = formatFileSize(item.size);
+        div_size.title = item.size;
+        div_filename.innerHTML = item.name;
+        div_i_file.title = item.name;
+        if (item.is_dir) {
+          div_icon.addEventListener("click", click_path);
+        } else {
+          div_icon.addEventListener("dblclick", click_path_application);
+        } 
+        
+        div_filename.addEventListener("dblclick", click_path_application);
+        div_browser.addEventListener("click", click_path_browser);
+      }
+      div_part.appendChild(frag);
+      document.querySelector(".filelist").appendChild(div_part);
+    }
+
     const list_directory_of_list_type = () => {
       console.log("list_directory_of_list_type");
-      draw_layout_icon(GalleryType.enum.LAYOUT_LIST);
-      show_layout(GalleryType.enum.LAYOUT_LIST);
-      show_top();
+
       const arrRes = g_res;
       for (const res of g_res) {
-        const div_file_table = document.querySelector(".filelist .file-table");
-        if (res.page_no == 0) {
-          div_file_table.innerHTML = "";
-        }
-        const frag = document.createDocumentFragment();
-        for (const item of res.item.items) {
-          let icon = "fa-file";
-          if (item.is_dir && item.tot > 0){
-            icon = "fa-folder-plus";
-          } else if (item.is_dir && item.tot == 0) {
-            icon = "fa-folder";
-          } else {
-            icon = "fa-file";
-          }
-          const div_row = document.createElement("div");
-          frag.appendChild(div_row);
-          div_row.classList.add("file-row", "data");
-          div_row.dataset.path = item.path;
-          div_row.dataset.is_dir = item.is_dir;
-          div_row.innerHTML = `
-            <div class="cell file">
-              <span class="i-file">
-                <span class="icon"><i class="fa-solid ${icon}"></i></span>
-                <span class="filename"></span>
-              </span>
-            </div>
-            <div class="cell browser"><i class="fa-solid fa-globe"></i></div>
-            <div class="cell size"></div>
-            <div class="cell ext">${item.ext}</div>
-            <div class="cell date">${toDate(item.mtime)}</div>
-          `
-          const div_i_file = div_row.querySelector(".i-file");
-          const div_icon = div_row.querySelector(".icon");
-          const div_filename = div_row.querySelector(".filename");
-          const div_size = div_row.querySelector(".cell.size");
-          const div_browser = div_row.querySelector(".cell.browser");
-          div_size.innerHTML = formatFileSize(item.size);
-          div_size.title = item.size;
-          div_filename.innerHTML = item.name;
-          div_i_file.title = item.name;
-          if (item.is_dir) {
-            div_icon.addEventListener("click", click_path);
-          } else {
-            div_icon.addEventListener("dblclick", click_path_application);
-          } 
-          
-          div_filename.addEventListener("dblclick", click_path_application);
-          div_browser.addEventListener("click", click_path_browser);
-        }
-        div_file_table.appendChild(frag);
+        list_directory_part_of_list_type(res);
       }
+    }
+
+    const list_directory_part_of_gallery_type = (res) => {
+      const total_pages = Math.ceil(res.item.tot/res.page_size);
+      document.querySelector(`.part[data-page_no="${res.page_no}"]`)?.remove();
+
+      if (res.page_no == 0){
+        draw_layout_icon(GalleryType.enum.LAYOUT_GALLERY);
+        show_layout(GalleryType.enum.LAYOUT_GALLERY);
+        show_top();
+        const parts = document.querySelectorAll(".part");
+        for (const part of parts){
+          if(part.parentElement.classList.contains(".filelist")){
+            part.remove()
+          } else if (part.dataset.page_no >= total_pages){
+            part.remove();
+          }
+        }
+      }
+
+      const div_part = document.createElement("div");
+      div_part.classList.add("box-table", "part");
+      div_part.dataset.page_no = res.page_no;
+
+      const frag = document.createDocumentFragment();
+      for (const item of res.item.items) {
+        let icon = "fa-file";
+        if (item.is_dir && item.tot > 0){
+          icon = "fa-folder-plus";
+        } else if (item.is_dir && item.tot == 0) {
+          icon = "fa-folder";
+        } else {
+          icon = "fa-file";
+        }
+
+        const div_media = document.createElement("div");
+        frag.appendChild(div_media);
+        div_media.classList.add("media", "data");
+        div_media.title = item.name;
+        div_media.dataset.is_dir = item.is_dir;
+        div_media.dataset.path = item.path;
+        if (item.mime.startsWith("video/")) {
+          div_media.innerHTML = `
+            <video controls>
+              <source src="" type="${item.mime}"  />
+            </video>
+          `;
+          div_media.querySelector("source").src = item.path;
+        } else if(item.mime.startsWith("audio/")) {
+          div_media.innerHTML = `
+            <audio controls>
+              <source src="" type="${item.mime}"  />
+            </audio>
+          `;
+          div_media.querySelector("source").src = item.path;
+        } else if(item.mime.startsWith("image/")) {
+          div_media.innerHTML = `
+            <img src="" />
+          `;
+          div_media.querySelector("img").src = item.path;
+          div_media.addEventListener("dblclick", click_path_browser);
+        } else if(item.is_dir) {
+          div_media.innerHTML = `
+            <div class="icon"><i class="fa-solid ${icon}"></i></div>
+            <div class="file"></div>
+          `;
+          div_media.querySelector(".file").innerHTML = change_filename(item.name);
+          div_media.querySelector(".icon").addEventListener("click", click_path);
+          div_media.querySelector(".file").addEventListener("dblclick", click_path_application);
+          div_media.querySelector(".file").addEventListener('copy', copy_gallery_filename);
+        } else {
+          div_media.innerHTML = `
+            <div class="icon"><i class="fa-solid ${icon}"></i></div>
+            <div class="file"></div>
+          `;
+          div_media.querySelector(".file").innerHTML = change_filename(item.name);
+          div_media.querySelector(".icon").addEventListener("click", click_path_application);
+          div_media.querySelector(".file").addEventListener("dblclick", click_path_application);
+          div_media.querySelector(".file").addEventListener('copy', copy_gallery_filename);
+        }
+      }
+      div_part.appendChild(frag);
+      document.querySelector(".gallery").appendChild(div_part);
+
       const slider = document.querySelector('.slider');
       slider.dispatchEvent(new Event('input', { bubbles: true }));
 
@@ -320,73 +419,10 @@
 
     const list_directory_of_gallery_type = () => {
       console.log("list_directory_of_gallery_type");
-      draw_layout_icon(GalleryType.enum.LAYOUT_GALLERY);
-      show_layout(GalleryType.enum.LAYOUT_GALLERY);
-      show_top();
+
       const arrRes = g_res;
-      const frag = document.createDocumentFragment();
       for (const res of g_res) {
-        const div_gallery = document.querySelector(".gallery");
-        if (res.page_no == 0) {
-          div_gallery.innerHTML = "";
-        }
-        for (const item of res.item.items) {
-          let icon = "fa-file";
-          if (item.is_dir && item.tot > 0){
-            icon = "fa-folder-plus";
-          } else if (item.is_dir && item.tot == 0) {
-            icon = "fa-folder";
-          } else {
-            icon = "fa-file";
-          }
-  
-          const div_media = document.createElement("div");
-          frag.appendChild(div_media);
-          div_media.classList.add("media", "data");
-          div_media.title = item.name;
-          div_media.dataset.is_dir = item.is_dir;
-          div_media.dataset.path = item.path;
-          if (item.mime.startsWith("video/")) {
-            div_media.innerHTML = `
-              <video controls>
-                <source src="" type="${item.mime}"  />
-              </video>
-            `;
-            div_media.querySelector("source").src = item.path;
-          } else if(item.mime.startsWith("audio/")) {
-            div_media.innerHTML = `
-              <audio controls>
-                <source src="" type="${item.mime}"  />
-              </audio>
-            `;
-            div_media.querySelector("source").src = item.path;
-          } else if(item.mime.startsWith("image/")) {
-            div_media.innerHTML = `
-              <img src="" />
-            `;
-            div_media.querySelector("img").src = item.path;
-            div_media.addEventListener("dblclick", click_path_browser);
-          } else if(item.is_dir) {
-            div_media.innerHTML = `
-              <div class="icon"><i class="fa-solid ${icon}"></i></div>
-              <div class="file"></div>
-            `;
-            div_media.querySelector(".file").innerHTML = change_filename(item.name);
-            div_media.querySelector(".icon").addEventListener("click", click_path);
-            div_media.querySelector(".file").addEventListener("dblclick", click_path_application);
-            div_media.querySelector(".file").addEventListener('copy', copy_gallery_filename);
-          } else {
-            div_media.innerHTML = `
-              <div class="icon"><i class="fa-solid ${icon}"></i></div>
-              <div class="file"></div>
-            `;
-            div_media.querySelector(".file").innerHTML = change_filename(item.name);
-            div_media.querySelector(".icon").addEventListener("click", click_path_application);
-            div_media.querySelector(".file").addEventListener("dblclick", click_path_application);
-            div_media.querySelector(".file").addEventListener('copy', copy_gallery_filename);
-          }
-        }
-        div_gallery.appendChild(frag);
+        list_directory_part_of_gallery_type(res);
       }
       const slider = document.querySelector('.slider');
       slider.dispatchEvent(new Event('input', { bubbles: true }));
@@ -474,7 +510,6 @@
     </div>
 
     <div class="filelist">
-      <div class="file-table"></div>
     </div>
 
   </div>

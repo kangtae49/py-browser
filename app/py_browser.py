@@ -22,17 +22,6 @@ from app.widgets.widget_folder import WidgetFolder
 from app.widgets.widget_content import WidgetContent
 from app.widgets.widget_base import WidgetBase
 
-
-
-
-# @dataclass
-# class State:
-#     template: ContentTemplate = ContentTemplate.CONTENT_LIST
-#     gallery_type: GalleryType = GalleryType.LAYOUT_LIST
-#     slider_val: str = "20"
-#     path: str = ""
-#     is_dir: bool = False
-
 class PyBrowser(wx.Frame):
     def __init__(self, parent, title):
         super().__init__(parent, title=title, size=(800, 600))
@@ -186,7 +175,7 @@ class PyBrowser(wx.Frame):
             select_path = req.select_path
 
         tot = count_path(root_path)
-        page_size = 5000
+        page_size = 500
         res = FolderRes(
             sender_id=req.sender_id,
             receiver_id=req.receiver_id,
