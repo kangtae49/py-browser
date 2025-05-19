@@ -16,7 +16,7 @@ send_get_state = ({
     action=ActionId.enum.GET_STATE,
     key=null,
 } = {}) => { 
-    console.log('send_get_state');
+    console.log(`send_get_state: ${key}`);
     Pb.sendMessage(GetStateReq.parse({sender_id, receiver_id,action, key,}));
 }
 
@@ -27,7 +27,7 @@ send_set_state = ({
     key=null,
     value=null,
 } = {}) => { 
-    console.log('send_set_state');
+    console.log(`send_set_state: ${key}=${value}`);
     Pb.sendMessage(SetStateReq.parse({sender_id, receiver_id,action, key, value,}));
 }
 
@@ -37,6 +37,9 @@ send_open_path = ({
     action=ActionId.enum.OPEN_PATH,
     open_path_type=OpenPathType.enum.AUTO,
     path=null,
-} = {}) => { Pb.sendMessage(OpenPathReq.parse({sender_id, receiver_id,action, open_path_type, path, }));}
+} = {}) => {
+    console.log(`send_open_path: ${receiver_id} ${action}`); 
+    Pb.sendMessage(OpenPathReq.parse({sender_id, receiver_id,action, open_path_type, path, }));
+}
 
 

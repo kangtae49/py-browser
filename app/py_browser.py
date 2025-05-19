@@ -12,7 +12,7 @@ from app.utils.file_utils import count_path
 
 from app.enums import WidgetId, ContentTemplate, GalleryType, StateKey, OpenPathType
 from app.models import createFolderReq
-from app.models import BaseMsg
+from app.models import BaseMsg, State
 from app.models import FolderReq, FolderRes, PathItem
 from app.models import GetStateReq, GetStateRes
 from app.models import SetStateReq, SetStateRes
@@ -25,13 +25,13 @@ from app.widgets.widget_base import WidgetBase
 
 
 
-@dataclass
-class State:
-    template: ContentTemplate = ContentTemplate.CONTENT_LIST
-    gallery_type: GalleryType = GalleryType.LAYOUT_LIST
-    slider_val: str = "20"
-    path: str = ""
-    is_dir: bool = False
+# @dataclass
+# class State:
+#     template: ContentTemplate = ContentTemplate.CONTENT_LIST
+#     gallery_type: GalleryType = GalleryType.LAYOUT_LIST
+#     slider_val: str = "20"
+#     path: str = ""
+#     is_dir: bool = False
 
 class PyBrowser(wx.Frame):
     def __init__(self, parent, title):
@@ -108,6 +108,8 @@ class PyBrowser(wx.Frame):
 
         self._mgr.Update()
 
+    def _get_state(self) -> State:
+        return self._state
 
     def _register_widget(self, widget_id: WidgetId, webview: WebView, widget: WidgetBase):
         self._webviews.update({widget_id: webview})

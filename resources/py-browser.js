@@ -122,7 +122,17 @@ const GetLinkRes = BaseMsg.extend({
     items: z.array(Link),
 });
 
+const State = z.object({
+    template: ContentTemplate,
+    gallery_type: GalleryType,
+    slider_val: z.string().default("20"),
+    path: z.string().default(""),
+    is_dir: z.boolean(),
+});
 
+const OnLoadRes = BaseMsg.extend({
+    state: State,
+});
 
 
 class PyBrowser {

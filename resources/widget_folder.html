@@ -58,12 +58,14 @@
           tree_node.appendChild(ul);
         } else {
           items = res.item.items;
-          const li = document.querySelector("li[data-path='" + encodeURIComponent(res.item.path) + "']")
-          li.appendChild(ul);
+          const li_parent = document.querySelector("li[data-path='" + encodeURIComponent(res.item.path) + "']")
+          li_parent.appendChild(ul);
         }
 
+        const frag = document.createDocumentFragment();
         for (const item of items) {
           const li = document.createElement("li");
+          frag.appendChild(li);
           if (item.is_dir) {
             li.dataset.is_dir = "true";
             li.dataset.tot = item.tot;
@@ -113,8 +115,9 @@
             div_path_icon.addEventListener("click", click_open_path);
             div_path_name.addEventListener("click", click_open_path);
           }
-          ul.appendChild(li);
         }
+        ul.appendChild(frag);
+
         
         if (res.select_path && (res.depth == 0 || res.page_no == Math.floor(res.item.tot/res.page_size))){
           setTimeout(() => {

@@ -59,8 +59,8 @@
     .fa-table-cells { color: #2a9d8f; }
   </style>
   <script>
-    let g_gallery_type = null;
-    let g_path = null;
+    let g_state = null;
+
     let g_res = [];
     let g_date_formatter = null;
     
@@ -74,17 +74,15 @@
     window.on_load = (params) => {
       const jres = JSON.parse(params);
       console.log("on_load");
+      const res = OnLoadRes.parse(jres);
+      g_state = res.state;
+
+      send_list_directory({ path: res.state.path, depth: 1 });
 
       document.querySelector(".layout-list").addEventListener("click", click_layout_list);
       document.querySelector(".layout-gallery").addEventListener("click", click_layout_gallery);
-      
-      // document.querySelector('.slider').value = 20;
       document.querySelector('.slider').addEventListener('input', change_slider);
 
-      send_get_state({ key: StateKey.enum.GALLERY_TYPE });
-      send_get_state({ key: StateKey.enum.PATH });
-      send_get_state({ key: StateKey.enum.SLIDER_VAL });
-      send_list_directory({ path: null, depth: 0 });
       
     }
 
@@ -100,39 +98,24 @@
       if (g_res.some((x) => x == null)){
         return;
       }
-      if (g_gallery_type == GalleryType.enum.LAYOUT_LIST) {
+      if (g_state.gallery_type == GalleryType.enum.LAYOUT_LIST) {
         list_directory_of_list_type();
-      } else if(g_gallery_type == GalleryType.enum.LAYOUT_GALLERY) {
+      } else if(g_state.gallery_type == GalleryType.enum.LAYOUT_GALLERY) {
         list_directory_of_gallery_type();
       }
     }
 
-    window.get_state = (params) => {
-      const jres = JSON.parse(params);
-      const res = GetStateRes.parse(jres);
-      console.log("get_state:", res.value);
-      if (res.key == StateKey.enum.PATH) {
-        g_path = res.value;
-        send_list_directory({ path: g_path, depth: 1 });
-      } else if (res.key == StateKey.enum.GALLERY_TYPE) {
-        g_gallery_type = res.value;
-        change_layout();
-      } else if (res.key == StateKey.enum.SLIDER_VAL) {
-        const slider = document.querySelector('.slider');
-        slider.value = res.value;
-        slider.dispatchEvent(new Event('input', { bubbles: true }));
-      }
-    }
 
     window.set_state = (params) => {
       const jres = JSON.parse(params);
       const res = SetStateRes.parse(jres);
-      console.log("set_state:", res.value);
+      console.log(`set_state: ${res.key}=${res.value}`);
       if (res.key == StateKey.enum.PATH) {
-        g_path = res.value;
+        g_state.path = res.value;
       } else if (res.key == StateKey.enum.GALLERY_TYPE) {
-        g_gallery_type = res.value;
-        change_layout();
+        g_state.gallery_type = res.value;
+      } else if (res.key == StateKey.enum.GALLERY_TYPE) {
+        g_state.slider_val = res.value;
       }
     }
     
@@ -147,6 +130,7 @@
       window.getSelection().removeAllRanges();
       const dataset = event.currentTarget.closest(".data").dataset;
       send_list_directory({ path: dataset.path});
+      send_set_state({key: StateKey.enum.PATH, value: dataset.path});
     }
 
     const click_path_application = (event) => {
@@ -164,12 +148,18 @@
 
     const click_layout_list = (event) => {
       console.log("click .layout-list");
-      send_set_state({key: StateKey.enum.GALLERY_TYPE, value: GalleryType.enum.LAYOUT_LIST});
+      if (g_state.gallery_type != GalleryType.enum.LAYOUT_LIST) {
+        send_set_state({key: StateKey.enum.GALLERY_TYPE, value: GalleryType.enum.LAYOUT_LIST});
+        list_directory_of_list_type();
+      }
     };
     
     const click_layout_gallery = (event) => {
       console.log("click .layout-gallery");
-      send_set_state({key: StateKey.enum.GALLERY_TYPE, value: GalleryType.enum.LAYOUT_GALLERY});
+      if (g_state.gallery_type != GalleryType.enum.LAYOUT_GALLERY) {
+        send_set_state({key: StateKey.enum.GALLERY_TYPE, value: GalleryType.enum.LAYOUT_GALLERY});
+        list_directory_of_gallery_type();
+      }
     };
 
     const click_cur_dir_part = (event) => {
@@ -196,35 +186,37 @@
     }
 
     const change_slider = (event) => {
-      document.querySelectorAll('.gallery .media').forEach(function (element) {
-        element.style.width = event.target.value + '%';
-      })
+      console.log("change_slider")
+      if (g_state.slider_val != event.target.value){
+        document.querySelectorAll('.gallery .media').forEach(function (element) {
+          element.style.width = event.target.value + '%';
+        })
 
-      document.querySelectorAll('.file-cell').forEach(function (element) {
-        element.style.flex = value;
-      })
-      send_set_state({ key: StateKey.enum.SLIDER_VAL, value: event.target.value});
-    }
-
-    const change_layout = () => {
-      if(g_gallery_type == GalleryType.enum.LAYOUT_LIST) {
-        document.querySelector(".layout-list").classList.add("on");
-        document.querySelector(".layout-gallery").classList.remove("on");
-        list_directory_of_list_type();
-      } else {
-        document.querySelector(".layout-list").classList.remove("on");
-        document.querySelector(".layout-gallery").classList.add("on");
-        list_directory_of_gallery_type();
+        document.querySelectorAll('.file-cell').forEach(function (element) {
+          element.style.flex = value;
+        })
+        send_set_state({ key: StateKey.enum.SLIDER_VAL, value: event.target.value});
       }
     }
 
-    const show_layout = () => {
-      if (g_gallery_type == GalleryType.enum.LAYOUT_LIST) {
+    const draw_layout_icon = (gallery_type) => {
+      if(gallery_type == GalleryType.enum.LAYOUT_LIST) {
+        document.querySelector(".layout-list").classList.add("on");
+        document.querySelector(".layout-gallery").classList.remove("on");
+      } else {
+        document.querySelector(".layout-list").classList.remove("on");
+        document.querySelector(".layout-gallery").classList.add("on");
+      }
+    }
+
+    const show_layout = (gallery_type) => {
+      if (gallery_type == GalleryType.enum.LAYOUT_LIST) {
         document.querySelector(".filelist").style.display = "";
         document.querySelector(".fileheader").style.display = "";
         document.querySelector(".slider-container").style.display = "none";
         document.querySelector(".gallery").style.display = "none";
-      } else if(g_gallery_type == GalleryType.enum.LAYOUT_GALLERY) {
+
+      } else if(gallery_type == GalleryType.enum.LAYOUT_GALLERY) {
         document.querySelector(".filelist").style.display = "none";
         document.querySelector(".fileheader").style.display = "none";
         document.querySelector(".slider-container").style.display = "";
@@ -265,7 +257,8 @@
 
     const list_directory_of_list_type = () => {
       console.log("list_directory_of_list_type");
-      show_layout();
+      draw_layout_icon(GalleryType.enum.LAYOUT_LIST);
+      show_layout(GalleryType.enum.LAYOUT_LIST);
       show_top();
       const arrRes = g_res;
       for (const res of g_res) {
@@ -273,6 +266,7 @@
         if (res.page_no == 0) {
           div_file_table.innerHTML = "";
         }
+        const frag = document.createDocumentFragment();
         for (const item of res.item.items) {
           let icon = "fa-file";
           if (item.is_dir && item.tot > 0){
@@ -283,6 +277,7 @@
             icon = "fa-file";
           }
           const div_row = document.createElement("div");
+          frag.appendChild(div_row);
           div_row.classList.add("file-row", "data");
           div_row.dataset.path = item.path;
           div_row.dataset.is_dir = item.is_dir;
@@ -307,26 +302,29 @@
           div_size.title = item.size;
           div_filename.innerHTML = item.name;
           div_i_file.title = item.name;
-          div_file_table.appendChild(div_row);
           if (item.is_dir) {
             div_icon.addEventListener("click", click_path);
           } else {
             div_icon.addEventListener("dblclick", click_path_application);
           } 
-  
+          
           div_filename.addEventListener("dblclick", click_path_application);
           div_browser.addEventListener("click", click_path_browser);
-  
         }
+        div_file_table.appendChild(frag);
       }
-      send_get_state({ key: StateKey.enum.SLIDER_VAL });
+      const slider = document.querySelector('.slider');
+      slider.dispatchEvent(new Event('input', { bubbles: true }));
+
     }
 
     const list_directory_of_gallery_type = () => {
       console.log("list_directory_of_gallery_type");
-      show_layout();
+      draw_layout_icon(GalleryType.enum.LAYOUT_GALLERY);
+      show_layout(GalleryType.enum.LAYOUT_GALLERY);
       show_top();
       const arrRes = g_res;
+      const frag = document.createDocumentFragment();
       for (const res of g_res) {
         const div_gallery = document.querySelector(".gallery");
         if (res.page_no == 0) {
@@ -343,6 +341,7 @@
           }
   
           const div_media = document.createElement("div");
+          frag.appendChild(div_media);
           div_media.classList.add("media", "data");
           div_media.title = item.name;
           div_media.dataset.is_dir = item.is_dir;
@@ -386,10 +385,11 @@
             div_media.querySelector(".file").addEventListener("dblclick", click_path_application);
             div_media.querySelector(".file").addEventListener('copy', copy_gallery_filename);
           }
-          div_gallery.appendChild(div_media);
         }
+        div_gallery.appendChild(frag);
       }
-      send_get_state({ key: StateKey.enum.SLIDER_VAL });
+      const slider = document.querySelector('.slider');
+      slider.dispatchEvent(new Event('input', { bubbles: true }));
     }
 
     const change_filename = (name) => {

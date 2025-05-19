@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import List
+from typing import List, Dict
 from app.enums import WidgetId, ActionId, StateKey, ContentTemplate, GalleryType, OpenPathType
 
 
@@ -67,6 +67,15 @@ class GetLinkReq(BaseMsg):
 class GetLinkRes(BaseMsg):
     items: List[Link]
 
+class State(BaseModel):
+    template: ContentTemplate = ContentTemplate.CONTENT_LIST
+    gallery_type: GalleryType = GalleryType.LAYOUT_LIST
+    slider_val: str = "20"
+    path: str = ""
+    is_dir: bool = False
+
+class OnLoadRes(BaseMsg):
+    state: State
 
 def createFolderReq (
         sender=WidgetId.PY_BROWSER,
