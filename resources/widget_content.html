@@ -14,7 +14,7 @@
   <style>
     body { margin: 0; padding: 0; height: 100vh; }
     .container { padding: 0; margin: 0; font-size: 0.8em }
-    .top-bar { position: fixed; top: 0px; padding-top: 10px; width: 100%; background-color: white; }
+    .top-bar { position: fixed; top: 0px; padding-top: 0px; width: 100%; background-color: white; }
     .slider-container { width: 100%; height: 25px; }
     .slider { width: 100%; height: 2px; }
     .ext-container { display: flex; justify-content: space-between; }
@@ -39,7 +39,7 @@
     .file-header .cell.ext { flex: 0 0 50px; text-align: center;}
     .file-header .cell.date { flex: 0 0 120px; text-align: right;}
     
-    .con-gal {padding: 75px 5px 0 5px;}    
+    .con-gal {padding: 85px 5px 0 5px;}    
     .con-gal .part { display: flex; flex-wrap: wrap; gap: 0px;  }
     .con-gal .part .item { width: 20%; display: flex; padding: 0 0px 0 1px;}
     .con-gal .part .item:hover { background-color: #bad0e4; cursor: pointer;}
@@ -50,7 +50,7 @@
     .con-gal .part .item .cell .icon{ display: inline-block; }
     .con-gal .part .item .cell .filename{ display: inline-block; }
     
-    .con-lst { padding: 75px 5px 0 5px; }
+    .con-lst { padding: 85px 5px 0 5px; }
     .con-lst .part { display: flex; flex-direction: column;  font-family: sans-serif; }
     .con-lst .part .item:hover {background-color: #bad0e4;}
     .con-lst .part .item .cell { padding: 0; box-sizing: border-box; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;}
@@ -60,6 +60,37 @@
     .con-lst .part .item .cell.size { flex: 0 0 80px; text-align: right;}
     .con-lst .part .item .cell.ext { flex: 0 0 50px; text-align: center;}
     .con-lst .part .item .cell.date { flex: 0 0 120px; text-align: right;}
+
+
+    .progress {
+      position: relative;
+      width: 40px;
+      height: 40px;
+    }
+
+    .progress-text {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 0.4em;
+      font-weight: bold;
+    }
+
+    .ring{
+      width: 100%;
+      height: 100%;
+    }
+
+    .ring .bg {stroke: #e6e6e6;}
+
+    .ring .color {
+      stroke: #00aaff;
+      transform: rotate(-90deg);
+      transform-origin: 50% 50%;
+      transition: stroke-dashoffset 0.5s ease;
+    }
+
 
     .fa-folder { color: #f4a261; margin-right: 5px; }
     .fa-folder-open { color: #f4a261; margin-right: 5px; }
@@ -76,7 +107,8 @@
   <script>
     let g_state = null;
 
-    let g_res = [];
+    let g_frag_lst = [];
+    let g_frag_gal = [];
     let g_date_formatter = null;
     
     Pb.addListener((params) => {
@@ -94,6 +126,8 @@
       console.log(res.state);
       document.querySelector(".con-lst").innerHTML = "";
       document.querySelector(".con-gal").innerHTML = "";
+      document.querySelector('.slider').value = g_state.slider_val;
+      setProgress(0);
 
       send_list_directory({ path: res.state.path, depth: 1 });
 
@@ -115,10 +149,16 @@
     }
 
     const async_list_directory = (res) => {
+      g_state.path = res.path;
+      send_set_state({key: StateKey.enum.PATH, value: res.path});
       if (res.page_no == 0) {
-        g_res = new Array(Math.ceil(res.item.tot/res.page_size)).fill(null); 
+        if (g_state.gallery_type == GalleryType.enum.LAYOUT_LIST) {
+          g_frag_lst = new Array(Math.ceil(res.item.tot/res.page_size)).fill(null);
+        } else if(g_state.gallery_type == GalleryType.enum.LAYOUT_GALLERY) {
+          g_frag_gal = new Array(Math.ceil(res.item.tot/res.page_size)).fill(null);
+        }
+
       }
-      g_res[res.page_no] = res;
 
       if (g_state.gallery_type == GalleryType.enum.LAYOUT_LIST) {
         list_directory_part_of_list_type(res);
@@ -149,33 +189,39 @@
       Promise.resolve(res).then((res) => {
         document.querySelector(".con-lst").innerHTML = "";
         document.querySelector(".con-gal").innerHTML = "";
+        g_frag_gal = []
+        g_frag_lst = []
+        setProgress(0);
+
         send_list_directory({ path: res.path, depth: 1 });
       });
     }
 
     const click_path = (event) => {
       window.getSelection().removeAllRanges();
-      const dataset = event.currentTarget.closest(".data").dataset;
+      const dataset = event.target.closest(".data").dataset;
+      g_state.path = dataset.path;
       send_list_directory({ path: dataset.path});
       send_set_state({key: StateKey.enum.PATH, value: dataset.path});
     }
 
     const click_path_application = (event) => {
       window.getSelection().removeAllRanges();
-      const dataset = event.currentTarget.closest(".data").dataset;
+      const dataset = event.target.closest(".data").dataset;
       send_open_path({ path: dataset.path, open_path_type: OpenPathType.enum.APPLICATION });
     }
 
     const click_path_browser = (event) => {
       console.log("click_path_browser");
       window.getSelection().removeAllRanges();
-      const dataset = event.currentTarget.closest('.data').dataset;
+      const dataset = event.target.closest('.data').dataset;
       send_open_path({ path: dataset.path, open_path_type: OpenPathType.enum.BROWSER });
     }
 
     const click_layout_list = (event) => {
       console.log("click .layout-list");
       if (g_state.gallery_type != GalleryType.enum.LAYOUT_LIST) {
+        setProgress(0);
         send_set_state({key: StateKey.enum.GALLERY_TYPE, value: GalleryType.enum.LAYOUT_LIST});
         list_directory_of_list_type();
       }
@@ -184,6 +230,7 @@
     const click_layout_gallery = (event) => {
       console.log("click .layout-gallery");
       if (g_state.gallery_type != GalleryType.enum.LAYOUT_GALLERY) {
+        setProgress(0);
         send_set_state({key: StateKey.enum.GALLERY_TYPE, value: GalleryType.enum.LAYOUT_GALLERY});
         list_directory_of_gallery_type();
       }
@@ -191,7 +238,7 @@
 
     const click_cur_dir_part = (event) => {
       console.log('click_cur_dir_part');
-      const dataset = event.currentTarget.closest('.dir-part').dataset;
+      const dataset = event.target.closest('.dir-part').dataset;
       const dir_sub = dataset.dir_sub;
       const root_path = dataset.path.split("/")[0] + "/";
       send_list_directory({path: dir_sub, depth: 1});
@@ -199,7 +246,7 @@
     }
 
     const click_cur_dir = (event) => {
-      const dataset = event.currentTarget.closest(".cur-dir").dataset;
+      const dataset = event.target.closest(".cur-dir").dataset;
       const root_path = dataset.path.split("/")[0] + "/";
       send_list_directory({path: root_path, select_path: root_path, depth: 0, receiver_id: WidgetId.enum.WIDGET_FOLDER});
     }
@@ -214,16 +261,16 @@
 
     const change_slider = (event) => {
       console.log("change_slider");
-      if (g_res.some((x) => x == null)){
+      if (g_frag_gal.some((x) => x == null)){
         return;
       }
 
       if (g_state.slider_val != event.target.value){
+        g_state.slider_val = event.target.value;
+        send_set_state({ key: StateKey.enum.SLIDER_VAL, value: event.target.value});
         document.querySelectorAll('.con-gal .part>div').forEach(function (element) {
           element.style.width = event.target.value + '%';
-          g_state.slider_val = event.target.value;
         });
-        send_set_state({ key: StateKey.enum.SLIDER_VAL, value: event.target.value});
       }
     }
 
@@ -253,8 +300,7 @@
 
     }
 
-    const show_top = () => {
-      const res = g_res[0];
+    const show_top = (res) => {
       const cur_dir = document.querySelector(".cur-dir");
       cur_dir.dataset.path = res.path;
       
@@ -285,28 +331,28 @@
 
     const list_directory_part_of_list_type = async (res) => {
       const total_pages = Math.ceil(res.item.tot/res.page_size);
-      document.querySelector(`.part[data-page_no="${res.page_no}"]`)?.remove();
+      const container = document.querySelector(".con-lst");
 
       if (res.page_no == 0){
         draw_layout_icon(GalleryType.enum.LAYOUT_LIST);
         show_layout(GalleryType.enum.LAYOUT_LIST);
-        show_top();
+        show_top(res);
         const parts = document.querySelectorAll(".part");
-        for (const part of parts){
-          if(part.parentElement.classList.contains(".con-gal")){
-            part.remove()
-          } else if (part.dataset.page_no >= total_pages){
-            part.remove();
-          }
+        container.innerHTML = "";
+        for (let i=0; i<total_pages; i++){
+          const div = document.createElement("div");
+          div.classList.add("part");
+          div.dataset.page_no = i;
+          container.appendChild(div);
         }
       }
 
-      const div_part = document.createElement("div");
-      div_part.classList.add("part");
-      div_part.dataset.page_no = res.page_no;
+      const div_part = container.querySelector(`.part[data-page_no="${res.page_no}"]`);
+
+      const progress_size = Math.ceil(res.item.tot / 100);
 
       const frag = document.createDocumentFragment();
-      for (const item of res.item.items) {
+      for (const [idx, item] of res.item.items.entries()) {
         let icon = "fa-file";
         if (item.is_dir && item.tot > 0){
           icon = "fa-folder-plus";
@@ -341,53 +387,64 @@
         div_size.title = item.size;
         div_filename.innerHTML = item.name;
         div_i_file.title = item.name;
-        if (item.is_dir) {
-          div_icon.addEventListener("click", click_path);
-        } else {
-          div_icon.addEventListener("dblclick", click_path_application);
-        } 
-        
-        div_filename.addEventListener("dblclick", click_path_application);
-        div_browser.addEventListener("click", click_path_browser);
       }
-      document.querySelector(".con-lst").appendChild(div_part);
+      g_frag_lst[res.page_no] = frag.cloneNode(true);
       div_part.appendChild(frag);
+
+      const cur_part_cnt = g_frag_lst.filter((x) => x != null).length;
+      await new Promise(resolve => setTimeout(resolve, 0));
+      setProgress(Math.ceil(cur_part_cnt/g_frag_lst.length*100));
+
     }
 
     const list_directory_of_list_type = () => {
       console.log("list_directory_of_list_type");
+      draw_layout_icon(GalleryType.enum.LAYOUT_LIST);
+      show_layout(GalleryType.enum.LAYOUT_LIST);
+      if (g_frag_lst.length == 0) {
+        send_list_directory({ path: g_state.path, depth: 1 });
+      }
 
-      const arrRes = g_res;
-      for (const res of g_res) {
-        list_directory_part_of_list_type(res);
+      const container = document.querySelector(".con-lst");
+      const total_pages = Math.ceil(g_frag_lst.length);
+
+      document.querySelector(".con-gal").innerHTML = "";
+      document.querySelector(".con-lst").innerHTML = "";
+      for (let i=0; i<total_pages; i++){
+        const div_part = document.createElement("div");
+        div_part.classList.add("part");
+        div_part.dataset.page_no = i;
+        container.appendChild(div_part);
+        div_part.appendChild(g_frag_lst[i].cloneNode(true));
       }
     }
 
-    const list_directory_part_of_gallery_type = async (res) => {
-      const total_pages = Math.ceil(res.item.tot/res.page_size);
-      document.querySelector(`.part[data-page_no="${res.page_no}"]`)?.remove();
 
+
+    const list_directory_part_of_gallery_type = async (res) => {
+      const total_pages = Math.ceil(g_frag_gal.length);
+
+      const container = document.querySelector(".con-gal");
       if (res.page_no == 0){
         draw_layout_icon(GalleryType.enum.LAYOUT_GALLERY);
         show_layout(GalleryType.enum.LAYOUT_GALLERY);
-        show_top();
-        const parts = document.querySelectorAll(".part");
-        for (const part of parts){
-          if(part.parentElement.classList.contains(".con-lst")){
-            part.remove()
-          } else if (part.dataset.page_no >= total_pages){
-            part.remove();
-          }
+        show_top(res);
+        container.innerHTML = "";
+        for (let i=0; i<total_pages; i++){
+          const div = document.createElement("div");
+          div.classList.add("part");
+          div.dataset.page_no = i;
+          container.appendChild(div);
         }
       }
 
-      const div_part = document.createElement("div");
-      div_part.classList.add("part");
-      div_part.dataset.page_no = res.page_no;
+      const div_part = container.querySelector(`.part[data-page_no="${res.page_no}"]`);
+
       const width = g_state.slider_val + '%';
+      const progress_size = Math.ceil(res.item.tot / 100);
 
       const frag = document.createDocumentFragment();
-      for (const item of res.item.items) {
+      for (const [idx, item] of res.item.items.entries()) {
         let icon = "fa-file";
         if (item.is_dir && item.tot > 0){
           icon = "fa-folder-plus";
@@ -423,7 +480,6 @@
             <img src="" loading="lazy" class="cell"/>
           `;
           div_item.querySelector("img").src = item.path;
-          div_item.addEventListener("dblclick", click_path_browser);
         } else if(item.is_dir) {
           div_item.innerHTML = `
             <div class="cell i-file">
@@ -432,9 +488,6 @@
             </div>
           `;
           div_item.querySelector(".filename").innerHTML = change_filename(item.name);
-          div_item.querySelector(".icon").addEventListener("click", click_path);
-          div_item.querySelector(".filename").addEventListener("dblclick", click_path_application);
-          div_item.querySelector(".filename").addEventListener('copy', copy_gallery_filename);
         } else {
           div_item.innerHTML = `
             <div class="cell i-file">
@@ -443,23 +496,37 @@
             </div>
             `;
           div_item.querySelector(".filename").innerHTML = change_filename(item.name);
-          div_item.querySelector(".icon").addEventListener("click", click_path_application);
-          div_item.querySelector(".filename").addEventListener("dblclick", click_path_application);
-          div_item.querySelector(".filename").addEventListener('copy', copy_gallery_filename);
         }
       }
-      document.querySelector(".con-gal").appendChild(div_part);
+      g_frag_gal[res.page_no] = frag.cloneNode(true);
       div_part.appendChild(frag);
+
+      const cur_part_cnt = g_frag_gal.filter((x) => x != null).length;
+      await new Promise(resolve => setTimeout(resolve, 0));
+      setProgress(Math.ceil(cur_part_cnt/g_frag_gal.length*100));
 
     }
 
     const list_directory_of_gallery_type = () => {
       console.log("list_directory_of_gallery_type");
+      draw_layout_icon(GalleryType.enum.LAYOUT_GALLERY);
+      show_layout(GalleryType.enum.LAYOUT_GALLERY);
+      if (g_frag_gal.length == 0) {
+        send_list_directory({ path: g_state.path, depth: 1 });
+      }      
+      const container = document.querySelector(".con-gal");
+      const total_pages = Math.ceil(g_frag_gal.length);
 
-      const arrRes = g_res;
-      for (const res of g_res) {
-        list_directory_part_of_gallery_type(res);
+      document.querySelector(".con-gal").innerHTML = "";
+      document.querySelector(".con-lst").innerHTML = "";
+      for (let i=0; i<total_pages; i++){
+        const div_part = document.createElement("div");
+        div_part.classList.add("part");
+        div_part.dataset.page_no = i;
+        container.appendChild(div_part);
+        div_part.appendChild(g_frag_gal[i].cloneNode(true));
       }
+
       const slider = document.querySelector('.slider');
       slider.dispatchEvent(new Event('input', { bubbles: true }));
     }
@@ -496,6 +563,66 @@
       return formatted.slice(0, 3).join("-") + " " + formatted.slice(-1)[0]
     }
 
+    function setProgress(percent) {
+      const color = document.querySelector(".ring .color");
+      const text = document.querySelector('.progress-text');
+      const radius = color.r.baseVal.value;
+      const circumference = 2 * Math.PI * radius;
+      
+      const offset = circumference * (1 - percent/100);
+      color.style.strokeDasharray = circumference;
+      color.style.strokeDashoffset = offset;
+      text.textContent = `${percent}%`;
+    }
+
+
+    document.addEventListener("copy", copy_gallery_filename);
+
+    document.addEventListener("click", (event) => {
+      const target = event.target;
+      const dataset = target.closest(".data")?.dataset;
+      if (dataset == null){
+        return;
+      }
+
+      if (target.closest(".con-lst")) {
+        if (dataset.is_dir == "true" && target.closest(".icon")){
+          click_path(event);
+        } else if (dataset.is_dir == "false" && target.closest(".icon")) {
+          click_path_application(event);
+        } else if (target.closest(".browser")) {
+          click_path_browser(event);
+        }
+      } else if (target.closest(".con-gal")) {
+        if (target.tagName == "IMG"){
+          click_path_browser(event);
+        } else if (dataset.is_dir == "true" && target.closest(".icon")){
+          click_path(event);
+        } else if (dataset.is_dir == "false" && target.closest(".icon")){
+          click_path_application(event);
+        }
+      }
+    });
+
+    document.addEventListener("dblclick", (event) => {
+      const target = event.target;
+      const dataset = target.closest(".data")?.dataset;
+      if (dataset == null){
+        return;
+      }
+      if (target.closest(".con-lst")) {
+        if (target.closest(".filename")) {
+          click_path_application(event);
+        }
+      } else if (target.closest(".con-gal")) {
+        if (target.closest(".filename")){
+          click_path_application(event);
+        }
+      }
+
+    });
+
+
   </script>
 </head>
 
@@ -504,6 +631,13 @@
     <div class="top-bar">
       <div class="ext-container">
         <div class="ext-sub">
+          <div class="progress">
+            <svg class="ring" viewBox="0 0 100 100">
+              <circle class="bg" r="38" cx="50" cy="50" fill="transparent" stroke-width="10"/>
+              <circle class="color" r="38" cx="50" cy="50" fill="transparent" stroke-width="10"/>
+            </svg>
+            <div class="progress-text">0%</div>
+          </div>
           <!--
           <div class="ext"><i class="fa-solid fa-folder"></i></div>
           <div class="ext"><i class="fa-solid fa-file"></i></div>
