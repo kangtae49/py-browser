@@ -120,9 +120,9 @@
 
         
         if (res.select_path && (res.depth == 0 || res.page_no == Math.floor(res.item.tot/res.page_size))){
-          setTimeout(() => {
+          Promise.resolve(res).then((res) => {
             go_path(res);
-          }, 1);
+          });
         }
       }
 
