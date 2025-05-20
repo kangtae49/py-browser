@@ -39,27 +39,25 @@
     .file-header .cell.ext { flex: 0 0 50px; text-align: center;}
     .file-header .cell.date { flex: 0 0 120px; text-align: right;}
     
-    .con-gal {padding: 85px 5px 0 5px;}    
-    .con-gal .part { display: flex; flex-wrap: wrap; gap: 0px;  }
-    .con-gal .part .item { width: 20%; display: flex; padding: 0 0px 0 1px;}
-    .con-gal .part .item:hover { background-color: #bad0e4; cursor: pointer;}
-    .con-gal .part .item .cell { width: 100%; height: 100%; object-fit: scale-down; /* object-fit: contain; */ }
-    .con-gal .part .item .cell.icon { flex: 0 0 16px;}
-    .con-gal .part .item .cell.file { flex: 1}
-    .con-gal .part .item .cell.file { width: 100%; height: 100%; overflow: hidden; text-overflow: ellipsis; }
-    .con-gal .part .item .cell .icon{ display: inline-block; }
-    .con-gal .part .item .cell .filename{ display: inline-block; }
+    .con-gal { display: flex; flex-wrap: wrap; gap: 0px; padding: 85px 5px 0 5px;}    
+    .con-gal .item { width: 20%; display: flex; padding: 0 0px 0 1px;}
+    .con-gal .item:hover { background-color: #bad0e4; cursor: pointer;}
+    .con-gal .item .cell { width: 100%; height: 100%; object-fit: scale-down; /* object-fit: contain; */ }
+    .con-gal .item .cell.icon { flex: 0 0 16px;}
+    .con-gal .item .cell.file { flex: 1}
+    .con-gal .item .cell.file { width: 100%; height: 100%; overflow: hidden; text-overflow: ellipsis; }
+    .con-gal .item .cell .icon{ display: inline-block; }
+    .con-gal .item .cell .filename{ display: inline-block; }
     
-    .con-lst { padding: 85px 5px 0 5px; }
-    .con-lst .part { display: flex; flex-direction: column;  font-family: sans-serif; }
-    .con-lst .part .item:hover {background-color: #bad0e4;}
-    .con-lst .part .item .cell { padding: 0; box-sizing: border-box; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;}
-    .con-lst .part .item .cell.file { flex: 1; text-align: left; }
-    .con-lst .part .item .cell.file .i-file {cursor: pointer;}
-    .con-lst .part .item .cell.browser { flex: 0 0 16px; text-align: center; cursor:pointer; color: #1e3050;}
-    .con-lst .part .item .cell.size { flex: 0 0 80px; text-align: right;}
-    .con-lst .part .item .cell.ext { flex: 0 0 50px; text-align: center;}
-    .con-lst .part .item .cell.date { flex: 0 0 120px; text-align: right;}
+    .con-lst { display: flex; flex-direction: column;  font-family: sans-serif; padding: 85px 5px 0 5px; }
+    .con-lst .item:hover {background-color: #bad0e4;}
+    .con-lst .item .cell { padding: 0; box-sizing: border-box; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;}
+    .con-lst .item .cell.file { flex: 1; text-align: left; }
+    .con-lst .item .cell.file .i-file {cursor: pointer;}
+    .con-lst .item .cell.browser { flex: 0 0 16px; text-align: center; cursor:pointer; color: #1e3050;}
+    .con-lst .item .cell.size { flex: 0 0 80px; text-align: right;}
+    .con-lst .item .cell.ext { flex: 0 0 50px; text-align: center;}
+    .con-lst .item .cell.date { flex: 0 0 120px; text-align: right;}
 
 
     .progress {
@@ -107,8 +105,8 @@
   <script>
     let g_state = null;
 
-    let g_frag_lst = [];
-    let g_frag_gal = [];
+    let g_frag_lst = null;
+    let g_frag_gal = null;
     let g_date_formatter = null;
     
     Pb.addListener((params) => {
@@ -153,9 +151,9 @@
       send_set_state({key: StateKey.enum.PATH, value: res.path});
       if (res.page_no == 0) {
         if (g_state.gallery_type == GalleryType.enum.LAYOUT_LIST) {
-          g_frag_lst = new Array(Math.ceil(res.item.tot/res.page_size)).fill(null);
+          g_frag_lst = null;
         } else if(g_state.gallery_type == GalleryType.enum.LAYOUT_GALLERY) {
-          g_frag_gal = new Array(Math.ceil(res.item.tot/res.page_size)).fill(null);
+          g_frag_gal = null;
         }
 
       }
@@ -189,8 +187,8 @@
       Promise.resolve(res).then((res) => {
         document.querySelector(".con-lst").innerHTML = "";
         document.querySelector(".con-gal").innerHTML = "";
-        g_frag_gal = []
-        g_frag_lst = []
+        g_frag_gal = null;
+        g_frag_lst = null;
         setProgress(0);
 
         send_list_directory({ path: res.path, depth: 1 });
@@ -261,14 +259,14 @@
 
     const change_slider = (event) => {
       console.log("change_slider");
-      if (g_frag_gal.some((x) => x == null)){
+      if (g_frag_gal == null){
         return;
       }
 
       if (g_state.slider_val != event.target.value){
         g_state.slider_val = event.target.value;
         send_set_state({ key: StateKey.enum.SLIDER_VAL, value: event.target.value});
-        document.querySelectorAll('.con-gal .part>div').forEach(function (element) {
+        document.querySelectorAll('.con-gal>.item').forEach(function (element) {
           element.style.width = event.target.value + '%';
         });
       }
@@ -330,28 +328,16 @@
     }
 
     const list_directory_part_of_list_type = async (res) => {
-      const total_pages = Math.ceil(res.item.tot/res.page_size);
       const container = document.querySelector(".con-lst");
 
       if (res.page_no == 0){
         draw_layout_icon(GalleryType.enum.LAYOUT_LIST);
         show_layout(GalleryType.enum.LAYOUT_LIST);
         show_top(res);
-        const parts = document.querySelectorAll(".part");
         container.innerHTML = "";
-        for (let i=0; i<total_pages; i++){
-          const div = document.createElement("div");
-          div.classList.add("part");
-          div.dataset.page_no = i;
-          container.appendChild(div);
-        }
+        g_frag_lst = document.createDocumentFragment();
       }
 
-      const div_part = container.querySelector(`.part[data-page_no="${res.page_no}"]`);
-
-      const progress_size = Math.ceil(res.item.tot / 100);
-
-      const frag = document.createDocumentFragment();
       for (const [idx, item] of res.item.items.entries()) {
         let icon = "fa-file";
         if (item.is_dir && item.tot > 0){
@@ -362,10 +348,15 @@
           icon = "fa-file";
         }
         const div_item = document.createElement("div");
-        frag.appendChild(div_item);
+        g_frag_lst.appendChild(div_item);
         div_item.classList.add("item", "data");
         div_item.dataset.path = item.path;
         div_item.dataset.is_dir = item.is_dir;
+        div_item.dataset.mtime = item.mtime;
+        div_item.dataset.name = item.name;
+        div_item.dataset.size = item.size;
+        div_item.dataset.ext = item.ext;
+
         div_item.innerHTML = `
           <div class="cell file">
             <span class="i-file">
@@ -387,13 +378,16 @@
         div_size.title = item.size;
         div_filename.innerHTML = item.name;
         div_i_file.title = item.name;
+        
       }
-      g_frag_lst[res.page_no] = frag.cloneNode(true);
-      div_part.appendChild(frag);
 
-      const cur_part_cnt = g_frag_lst.filter((x) => x != null).length;
+      if (g_frag_lst.childElementCount == res.item.tot){
+        container.appendChild(g_frag_lst.cloneNode(true));
+      }
+      const cur_part_cnt = g_frag_lst.childElementCount;
       await new Promise(resolve => setTimeout(resolve, 0));
-      setProgress(Math.ceil(cur_part_cnt/g_frag_lst.length*100));
+      setProgress(Math.ceil(cur_part_cnt/res.item.tot*100));
+
 
     }
 
@@ -401,7 +395,7 @@
       console.log("list_directory_of_list_type");
       draw_layout_icon(GalleryType.enum.LAYOUT_LIST);
       show_layout(GalleryType.enum.LAYOUT_LIST);
-      if (g_frag_lst.length == 0) {
+      if (g_frag_lst == null) {
         send_list_directory({ path: g_state.path, depth: 1 });
       }
 
@@ -410,19 +404,29 @@
 
       document.querySelector(".con-gal").innerHTML = "";
       document.querySelector(".con-lst").innerHTML = "";
-      for (let i=0; i<total_pages; i++){
-        const div_part = document.createElement("div");
-        div_part.classList.add("part");
-        div_part.dataset.page_no = i;
-        container.appendChild(div_part);
-        div_part.appendChild(g_frag_lst[i].cloneNode(true));
+      container.appendChild(g_frag_lst.cloneNode(true));
+    }
+
+    const list_directory_of_gallery_type = () => {
+      console.log("list_directory_of_gallery_type");
+      draw_layout_icon(GalleryType.enum.LAYOUT_GALLERY);
+      show_layout(GalleryType.enum.LAYOUT_GALLERY);
+      if (g_frag_gal == null) {
+        send_list_directory({ path: g_state.path, depth: 1 });
       }
+
+      const container = document.querySelector(".con-gal");
+
+      document.querySelector(".con-gal").innerHTML = "";
+      document.querySelector(".con-lst").innerHTML = "";
+      container.appendChild(g_frag_gal.cloneNode(true));
+
+      const slider = document.querySelector('.slider');
+      slider.dispatchEvent(new Event('input', { bubbles: true }));
     }
 
 
-
     const list_directory_part_of_gallery_type = async (res) => {
-      const total_pages = Math.ceil(g_frag_gal.length);
 
       const container = document.querySelector(".con-gal");
       if (res.page_no == 0){
@@ -430,20 +434,12 @@
         show_layout(GalleryType.enum.LAYOUT_GALLERY);
         show_top(res);
         container.innerHTML = "";
-        for (let i=0; i<total_pages; i++){
-          const div = document.createElement("div");
-          div.classList.add("part");
-          div.dataset.page_no = i;
-          container.appendChild(div);
-        }
+        g_frag_gal = document.createDocumentFragment();
       }
 
-      const div_part = container.querySelector(`.part[data-page_no="${res.page_no}"]`);
 
       const width = g_state.slider_val + '%';
-      const progress_size = Math.ceil(res.item.tot / 100);
 
-      const frag = document.createDocumentFragment();
       for (const [idx, item] of res.item.items.entries()) {
         let icon = "fa-file";
         if (item.is_dir && item.tot > 0){
@@ -455,12 +451,16 @@
         }
 
         const div_item = document.createElement("div");
-        frag.appendChild(div_item);
+        g_frag_gal.appendChild(div_item);
         div_item.style.width = width;
         div_item.classList.add("item", "data");
         div_item.title = item.name;
-        div_item.dataset.is_dir = item.is_dir;
         div_item.dataset.path = item.path;
+        div_item.dataset.is_dir = item.is_dir;
+        div_item.dataset.mtime = item.mtime;
+        div_item.dataset.name = item.name;
+        div_item.dataset.size = item.size;
+        div_item.dataset.ext = item.ext;
         if (item.mime.startsWith("video/")) {
           div_item.innerHTML = `
             <video controls class="cell">
@@ -498,38 +498,16 @@
           div_item.querySelector(".filename").innerHTML = change_filename(item.name);
         }
       }
-      g_frag_gal[res.page_no] = frag.cloneNode(true);
-      div_part.appendChild(frag);
-
-      const cur_part_cnt = g_frag_gal.filter((x) => x != null).length;
-      await new Promise(resolve => setTimeout(resolve, 0));
-      setProgress(Math.ceil(cur_part_cnt/g_frag_gal.length*100));
-
-    }
-
-    const list_directory_of_gallery_type = () => {
-      console.log("list_directory_of_gallery_type");
-      draw_layout_icon(GalleryType.enum.LAYOUT_GALLERY);
-      show_layout(GalleryType.enum.LAYOUT_GALLERY);
-      if (g_frag_gal.length == 0) {
-        send_list_directory({ path: g_state.path, depth: 1 });
-      }      
-      const container = document.querySelector(".con-gal");
-      const total_pages = Math.ceil(g_frag_gal.length);
-
-      document.querySelector(".con-gal").innerHTML = "";
-      document.querySelector(".con-lst").innerHTML = "";
-      for (let i=0; i<total_pages; i++){
-        const div_part = document.createElement("div");
-        div_part.classList.add("part");
-        div_part.dataset.page_no = i;
-        container.appendChild(div_part);
-        div_part.appendChild(g_frag_gal[i].cloneNode(true));
+      if (g_frag_gal.childElementCount == res.item.tot){
+        container.appendChild(g_frag_gal.cloneNode(true));
       }
+      const cur_part_cnt = g_frag_gal.childElementCount;
+      await new Promise(resolve => setTimeout(resolve, 0));
+      setProgress(Math.ceil(cur_part_cnt/res.item.tot*100));
 
-      const slider = document.querySelector('.slider');
-      slider.dispatchEvent(new Event('input', { bubbles: true }));
     }
+
+
 
     const change_filename = (name) => {
       return name.replace(/(.{5})(?=.)/g, '$1\u200B');
@@ -537,7 +515,7 @@
 
     const formatFileSize = (bytes) => {
       if (bytes === 0) return '0KB';
-      const kb = Math.floor(bytes / 1024);
+      const kb = Math.ceil(bytes / 1024);
       return kb.toLocaleString('en-US') + 'KB';
     }
 
@@ -621,6 +599,49 @@
       }
 
     });
+
+    sort_list = (sort_list) => {
+      let con_name = ""
+      if (g_state.gallery_type == GalleryType.enum.LAYOUT_LIST){
+        con_name = ".con-lst";
+      } else {
+        con_name = ".con-gal";
+      }
+
+      const container = document.querySelector(con_name);
+      let items = Array.from(container.querySelectorAll(`${con_name} .item`));
+
+      items = items.sort((a, b) => {
+        for (const [nm, sort_num] of sort_list) {
+          if (nm == "is_dir") {
+            if (a.dataset.is_dir != b.dataset.is_dir) {
+              return (a.dataset.is_dir == "true" ? -1 : 1) * sort_num;
+            }
+          } else if (["name", "ext"].includes(nm)) {
+            const a_lower = a.dataset[nm].toLowerCase();
+            const b_lower = b.dataset[nm].toLowerCase();
+            const cmp = a_lower.localeCompare(b_lower);
+            if (cmp != 0) {
+              return cmp * sort_num;
+            }
+          } else if (["size", "mtime"].includes(nm)) {
+            const a_num = parseInt(a.dataset[nm]);
+            const b_num = parseInt(b.dataset[nm]);
+            const cmp = a_num-b_num;
+            if (cmp != 0) {
+              return cmp * sort_num;
+            }
+          }
+        }
+        
+      });
+
+      const fragment = document.createDocumentFragment();
+      items.forEach(item => {
+        fragment.appendChild(item);
+      });
+      container.appendChild(fragment);
+    }
 
 
   </script>
