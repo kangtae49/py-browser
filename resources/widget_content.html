@@ -380,9 +380,16 @@
         div_i_file.title = item.name;
         
       }
+      if (res.page_no == 0){
+        Array.from(g_frag_lst.cloneNode(true).children).slice(0, res.page_size).forEach((item) => {
+          container.appendChild(item);
+        })
+      }
 
       if (g_frag_lst.childElementCount == res.item.tot){
-        container.appendChild(g_frag_lst.cloneNode(true));
+        Array.from(g_frag_lst.cloneNode(true).children).slice(res.page_size).forEach((item) => {
+          container.appendChild(item);
+        })
       }
       const cur_part_cnt = g_frag_lst.childElementCount;
       await new Promise(resolve => setTimeout(resolve, 0));
@@ -397,10 +404,10 @@
       show_layout(GalleryType.enum.LAYOUT_LIST);
       if (g_frag_lst == null) {
         send_list_directory({ path: g_state.path, depth: 1 });
+        return;
       }
 
       const container = document.querySelector(".con-lst");
-      const total_pages = Math.ceil(g_frag_lst.length);
 
       document.querySelector(".con-gal").innerHTML = "";
       document.querySelector(".con-lst").innerHTML = "";
@@ -413,6 +420,7 @@
       show_layout(GalleryType.enum.LAYOUT_GALLERY);
       if (g_frag_gal == null) {
         send_list_directory({ path: g_state.path, depth: 1 });
+        return;
       }
 
       const container = document.querySelector(".con-gal");
@@ -498,8 +506,18 @@
           div_item.querySelector(".filename").innerHTML = change_filename(item.name);
         }
       }
+      if (res.page_no == 0){
+        Array.from(g_frag_gal.cloneNode(true).children).slice(0, res.page_size).forEach((item) => {
+          container.appendChild(item);
+        })
+      }
+
       if (g_frag_gal.childElementCount == res.item.tot){
-        container.appendChild(g_frag_gal.cloneNode(true));
+        Array.from(g_frag_gal.cloneNode(true).children).slice(res.page_size).forEach((item) => {
+          container.appendChild(item);
+        })
+
+        document.querySelector('.slider').addEventListener('input', change_slider);
       }
       const cur_part_cnt = g_frag_gal.childElementCount;
       await new Promise(resolve => setTimeout(resolve, 0));
