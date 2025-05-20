@@ -22,31 +22,43 @@
     .ext-container .ext-sub .ext { padding: 0 2px 0 2px; cursor: pointer;}
     .ext-container .ext-sub .ext[class*="on"] i { color: #2a9d8f; }
     .ext-container .ext-sub .ext i { color: #d4c5ba; }
-    .gallery {padding: 75px 5px 0 5px;}    
-    .box-table { display: flex; flex-wrap: wrap; gap: 0px;  }
-    .box-table .media { width: 20%; display: flex; padding: 0 0px 0 1px;}
-    .box-table .media:hover { background-color: #bad0e4; cursor: pointer;}
-    .box-table .media .icon { flex: 0 0 16px;}
-    .box-table .media .file { flex: 1}
-    .box-table .media * { width: 100%; height: 100%; object-fit: scale-down; /* object-fit: contain; */ }
-    .box-table .media .file { width: 100%; height: 100%; overflow: hidden; text-overflow: ellipsis; }
+
+    .top-bar .dir-browser {display: inline-block; cursor:pointer; color: #1e3050;}
+    .top-bar .cell.cur-dir {cursor: pointer; display: inline-block;}
+    .top-bar .cell.cur-dir .dir-all {display: inline-block;}
+    .top-bar .cell.cur-dir .dir-all .dir-part {display: inline-block; cursor: pointer;}
+    .top-bar .cell.cur-dir .dir-all .dir-part:hover { background-color: #bad0e4;}
+
+
     .fileheader { padding: 2px 5px 2px 5px; background-color: #f0f0f0; font-weight: bold;  }
-    .filelist { padding: 75px 5px 0 5px; }
-    .file-table { display: flex; flex-direction: column;  font-family: sans-serif; }
-    .file-header, .file-row { display: flex; }
-    .file-row:hover {background-color: #bad0e4;}
-    .file-row .i-file {cursor: pointer;}
-    .cell.cur-dir {cursor: pointer; display: inline-block;}
-    .cell.cur-dir .dir-all {display: inline-block;}
-    .cell.cur-dir .dir-part {display: inline-block; cursor: pointer;}
-    .cell.cur-dir .dir-part:hover { background-color: #bad0e4;}
-    .dir-browser {display: inline-block; cursor:pointer; color: #1e3050;}
-    .cell { padding: 0; box-sizing: border-box; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;}
-    .cell.file { flex: 1; text-align: left; }
-    .cell.browser { flex: 0 0 16px; text-align: center; cursor:pointer; color: #1e3050;}
-    .cell.size { flex: 0 0 80px; text-align: right;}
-    .cell.ext { flex: 0 0 50px; text-align: center;}
-    .cell.date { flex: 0 0 120px; text-align: right;}
+    .file-header, .item { display: flex; }
+    .file-header .cell { padding: 0; box-sizing: border-box; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;}
+    .file-header .cell.file { flex: 1; text-align: left; }
+    .file-header .cell.browser { flex: 0 0 16px; text-align: center; cursor:pointer; color: #1e3050;}
+    .file-header .cell.size { flex: 0 0 80px; text-align: right;}
+    .file-header .cell.ext { flex: 0 0 50px; text-align: center;}
+    .file-header .cell.date { flex: 0 0 120px; text-align: right;}
+    
+    .con-gal {padding: 75px 5px 0 5px;}    
+    .con-gal .part { display: flex; flex-wrap: wrap; gap: 0px;  }
+    .con-gal .part .item { width: 20%; display: flex; padding: 0 0px 0 1px;}
+    .con-gal .part .item:hover { background-color: #bad0e4; cursor: pointer;}
+    .con-gal .part .item .icon { flex: 0 0 16px;}
+    .con-gal .part .item .file { flex: 1}
+    .con-gal .part .item * { width: 100%; height: 100%; object-fit: scale-down; /* object-fit: contain; */ }
+    .con-gal .part .item .file { width: 100%; height: 100%; overflow: hidden; text-overflow: ellipsis; }
+    
+    .con-lst { padding: 75px 5px 0 5px; }
+    .con-lst .part { display: flex; flex-direction: column;  font-family: sans-serif; }
+    .con-lst .part .item:hover {background-color: #bad0e4;}
+    .con-lst .part .item .cell { padding: 0; box-sizing: border-box; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;}
+    .con-lst .part .item .cell.file { flex: 1; text-align: left; }
+    .con-lst .part .item .cell.file .i-file {cursor: pointer;}
+    .con-lst .part .item .cell.browser { flex: 0 0 16px; text-align: center; cursor:pointer; color: #1e3050;}
+    .con-lst .part .item .cell.size { flex: 0 0 80px; text-align: right;}
+    .con-lst .part .item .cell.ext { flex: 0 0 50px; text-align: center;}
+    .con-lst .part .item .cell.date { flex: 0 0 120px; text-align: right;}
+
     .fa-folder { color: #f4a261; margin-right: 5px; }
     .fa-folder-open { color: #f4a261; margin-right: 5px; }
     .fa-folder-plus { color: #f4a261; margin-right: 5px; }
@@ -78,6 +90,9 @@
       const res = OnLoadRes.parse(jres);
       g_state = res.state;
       console.log(res.state);
+      document.querySelector(".con-lst").innerHTML = "";
+      document.querySelector(".con-gal").innerHTML = "";
+
       send_list_directory({ path: res.state.path, depth: 1 });
 
       document.querySelector(".layout-list").addEventListener("click", click_layout_list);
@@ -92,12 +107,12 @@
       const res = FolderRes.parse(jres);
       console.log("page_no: " + res.page_no);
 
-      setTimeout( async () => {
+      Promise.resolve(res).then((res) => {
         async_list_directory(res);
-      }, 0);
+      });
     }
 
-    const async_list_directory = async (res) => {
+    const async_list_directory = (res) => {
       if (res.page_no == 0) {
         g_res = new Array(Math.ceil(res.item.tot/res.page_size)).fill(null); 
       }
@@ -129,7 +144,11 @@
       console.log("open_path");
       const jres = JSON.parse(params);
       const res = OpenPathRes.parse(jres);
-      send_list_directory({ path: res.path, depth: 1 });
+      Promise.resolve(res).then((res) => {
+        document.querySelector(".con-lst").innerHTML = "";
+        document.querySelector(".con-gal").innerHTML = "";
+        send_list_directory({ path: res.path, depth: 1 });
+      });
     }
 
     const click_path = (event) => {
@@ -198,7 +217,7 @@
       }
 
       if (g_state.slider_val != event.target.value){
-        document.querySelectorAll('.gallery .part>div').forEach(function (element) {
+        document.querySelectorAll('.con-gal .part>div').forEach(function (element) {
           element.style.width = event.target.value + '%';
           g_state.slider_val = event.target.value;
         });
@@ -218,16 +237,16 @@
 
     const show_layout = (gallery_type) => {
       if (gallery_type == GalleryType.enum.LAYOUT_LIST) {
-        document.querySelector(".filelist").style.display = "";
+        document.querySelector(".con-lst").style.display = "";
         document.querySelector(".fileheader").style.display = "";
         document.querySelector(".slider-container").style.display = "none";
-        document.querySelector(".gallery").style.display = "none";
+        document.querySelector(".con-gal").style.display = "none";
 
       } else if(gallery_type == GalleryType.enum.LAYOUT_GALLERY) {
-        document.querySelector(".filelist").style.display = "none";
+        document.querySelector(".con-lst").style.display = "none";
         document.querySelector(".fileheader").style.display = "none";
         document.querySelector(".slider-container").style.display = "";
-        document.querySelector(".gallery").style.display = "";
+        document.querySelector(".con-gal").style.display = "";
       }
 
     }
@@ -272,7 +291,7 @@
         show_top();
         const parts = document.querySelectorAll(".part");
         for (const part of parts){
-          if(part.parentElement.classList.contains(".gallery")){
+          if(part.parentElement.classList.contains(".con-gal")){
             part.remove()
           } else if (part.dataset.page_no >= total_pages){
             part.remove();
@@ -281,7 +300,7 @@
       }
 
       const div_part = document.createElement("div");
-      div_part.classList.add("file-table", "part");
+      div_part.classList.add("part");
       div_part.dataset.page_no = res.page_no;
 
       const frag = document.createDocumentFragment();
@@ -296,7 +315,7 @@
         }
         const div_row = document.createElement("div");
         frag.appendChild(div_row);
-        div_row.classList.add("file-row", "data");
+        div_row.classList.add("item", "data");
         div_row.dataset.path = item.path;
         div_row.dataset.is_dir = item.is_dir;
         div_row.innerHTML = `
@@ -330,7 +349,7 @@
         div_browser.addEventListener("click", click_path_browser);
       }
       div_part.appendChild(frag);
-      document.querySelector(".filelist").appendChild(div_part);
+      document.querySelector(".con-lst").appendChild(div_part);
     }
 
     const list_directory_of_list_type = () => {
@@ -352,7 +371,7 @@
         show_top();
         const parts = document.querySelectorAll(".part");
         for (const part of parts){
-          if(part.parentElement.classList.contains(".filelist")){
+          if(part.parentElement.classList.contains(".con-lst")){
             part.remove()
           } else if (part.dataset.page_no >= total_pages){
             part.remove();
@@ -361,7 +380,7 @@
       }
 
       const div_part = document.createElement("div");
-      div_part.classList.add("box-table", "part");
+      div_part.classList.add("part");
       div_part.dataset.page_no = res.page_no;
       const width = g_state.slider_val + '%';
 
@@ -379,7 +398,7 @@
         const div_media = document.createElement("div");
         frag.appendChild(div_media);
         div_media.style.width = width;
-        div_media.classList.add("media", "data");
+        div_media.classList.add("item", "data");
         div_media.title = item.name;
         div_media.dataset.is_dir = item.is_dir;
         div_media.dataset.path = item.path;
@@ -399,7 +418,7 @@
           div_media.querySelector("source").src = item.path;
         } else if(item.mime.startsWith("image/")) {
           div_media.innerHTML = `
-            <img src="" />
+            <img src="" loading="lazy" />
           `;
           div_media.querySelector("img").src = item.path;
           div_media.addEventListener("dblclick", click_path_browser);
@@ -424,7 +443,7 @@
         }
       }
       div_part.appendChild(frag);
-      document.querySelector(".gallery").appendChild(div_part);
+      document.querySelector(".con-gal").appendChild(div_part);
 
     }
 
@@ -517,10 +536,10 @@
       </div>
 
     </div>
-    <div class="gallery">
+    <div class="con-gal">
     </div>
 
-    <div class="filelist">
+    <div class="con-lst">
     </div>
 
   </div>
