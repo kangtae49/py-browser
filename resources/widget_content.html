@@ -21,7 +21,7 @@
     .ext-container .ext-sub { display: flex; }
     .ext-container .ext-sub .ext { padding: 0 2px 0 2px; cursor: pointer;}
     .ext-container .ext-sub .ext[class*="on"] i { color: #2a9d8f; }
-    .ext-container .ext-sub .ext i { color: #d4c5ba; }
+    .ext-container .ext-sub .ext i { color: #d4c5ba;}
 
     .top-bar .dir-browser {display: inline-block; cursor:pointer; color: #1e3050;}
     .top-bar .cell.cur-dir {cursor: pointer; display: inline-block;}
@@ -338,6 +338,7 @@
         g_frag_lst = document.createDocumentFragment();
       }
 
+      const frag = document.createDocumentFragment();
       for (const [idx, item] of res.item.items.entries()) {
         let icon = "fa-file";
         if (item.is_dir && item.tot > 0){
@@ -348,7 +349,8 @@
           icon = "fa-file";
         }
         const div_item = document.createElement("div");
-        g_frag_lst.appendChild(div_item);
+        frag.appendChild(div_item);
+
         div_item.classList.add("item", "data");
         div_item.dataset.path = item.path;
         div_item.dataset.is_dir = item.is_dir;
@@ -356,6 +358,7 @@
         div_item.dataset.name = item.name;
         div_item.dataset.size = item.size;
         div_item.dataset.ext = item.ext;
+        div_item.dataset.mime = item.mime;
 
         div_item.innerHTML = `
           <div class="cell file">
@@ -378,19 +381,13 @@
         div_size.title = item.size;
         div_filename.innerHTML = item.name;
         div_i_file.title = item.name;
-        
+        g_frag_lst.appendChild(div_item.cloneNode(true));
       }
-      if (res.page_no == 0){
-        Array.from(g_frag_lst.cloneNode(true).children).slice(0, res.page_size).forEach((item) => {
-          container.appendChild(item);
-        })
+      container.appendChild(frag);
+      if (g_frag_lst.childElementCount == res.item.tot){
+        sort_list([["is_dir", "1"], ["name", "1"]]);
       }
 
-      if (g_frag_lst.childElementCount == res.item.tot){
-        Array.from(g_frag_lst.cloneNode(true).children).slice(res.page_size).forEach((item) => {
-          container.appendChild(item);
-        })
-      }
       const cur_part_cnt = g_frag_lst.childElementCount;
       await new Promise(resolve => setTimeout(resolve, 0));
       setProgress(Math.ceil(cur_part_cnt/res.item.tot*100));
@@ -398,24 +395,30 @@
 
     }
 
-    const list_directory_of_list_type = () => {
+    const list_directory_of_list_type = async () => {
       console.log("list_directory_of_list_type");
+      setProgress(0);
+      const container = document.querySelector(".con-lst");
       draw_layout_icon(GalleryType.enum.LAYOUT_LIST);
       show_layout(GalleryType.enum.LAYOUT_LIST);
       if (g_frag_lst == null) {
         send_list_directory({ path: g_state.path, depth: 1 });
         return;
       }
-
-      const container = document.querySelector(".con-lst");
-
       document.querySelector(".con-gal").innerHTML = "";
       document.querySelector(".con-lst").innerHTML = "";
       container.appendChild(g_frag_lst.cloneNode(true));
+      Promise.resolve().then( async () => {
+        await new Promise(resolve => setTimeout(resolve, 1));
+        setProgress(100);
+        sort_list([["is_dir", "1"], ["name", "1"]]);
+      })
     }
 
-    const list_directory_of_gallery_type = () => {
+    const list_directory_of_gallery_type = async () => {
       console.log("list_directory_of_gallery_type");
+      setProgress(0);
+      const container = document.querySelector(".con-gal");
       draw_layout_icon(GalleryType.enum.LAYOUT_GALLERY);
       show_layout(GalleryType.enum.LAYOUT_GALLERY);
       if (g_frag_gal == null) {
@@ -423,14 +426,17 @@
         return;
       }
 
-      const container = document.querySelector(".con-gal");
-
       document.querySelector(".con-gal").innerHTML = "";
       document.querySelector(".con-lst").innerHTML = "";
       container.appendChild(g_frag_gal.cloneNode(true));
+      Promise.resolve().then( async () => {
+        await new Promise(resolve => setTimeout(resolve, 1));
+        const slider = document.querySelector('.slider');
+        slider.dispatchEvent(new Event('input', { bubbles: true }));
+        setProgress(100);
+        sort_list([["is_dir", "1"], ["name", "1"]]);
+      });
 
-      const slider = document.querySelector('.slider');
-      slider.dispatchEvent(new Event('input', { bubbles: true }));
     }
 
 
@@ -448,6 +454,7 @@
 
       const width = g_state.slider_val + '%';
 
+      const frag = document.createDocumentFragment();
       for (const [idx, item] of res.item.items.entries()) {
         let icon = "fa-file";
         if (item.is_dir && item.tot > 0){
@@ -459,7 +466,8 @@
         }
 
         const div_item = document.createElement("div");
-        g_frag_gal.appendChild(div_item);
+        frag.appendChild(div_item);
+
         div_item.style.width = width;
         div_item.classList.add("item", "data");
         div_item.title = item.name;
@@ -469,6 +477,8 @@
         div_item.dataset.name = item.name;
         div_item.dataset.size = item.size;
         div_item.dataset.ext = item.ext;
+        div_item.dataset.mime = item.mime;
+
         if (item.mime.startsWith("video/")) {
           div_item.innerHTML = `
             <video controls class="cell">
@@ -505,22 +515,16 @@
             `;
           div_item.querySelector(".filename").innerHTML = change_filename(item.name);
         }
+        g_frag_gal.appendChild(div_item.cloneNode(true));
       }
-      if (res.page_no == 0){
-        Array.from(g_frag_gal.cloneNode(true).children).slice(0, res.page_size).forEach((item) => {
-          container.appendChild(item);
-        })
-      }
+      container.appendChild(frag);
 
+      await new Promise(resolve => setTimeout(resolve, 0));
       if (g_frag_gal.childElementCount == res.item.tot){
-        Array.from(g_frag_gal.cloneNode(true).children).slice(res.page_size).forEach((item) => {
-          container.appendChild(item);
-        })
-
+        sort_list([["is_dir", "1"], ["name", "1"]]);
         document.querySelector('.slider').addEventListener('input', change_slider);
       }
       const cur_part_cnt = g_frag_gal.childElementCount;
-      await new Promise(resolve => setTimeout(resolve, 0));
       setProgress(Math.ceil(cur_part_cnt/res.item.tot*100));
 
     }
@@ -560,6 +564,10 @@
     }
 
     function setProgress(percent) {
+      if (!Number.isFinite(percent)){
+        return;
+      }
+
       const color = document.querySelector(".ring .color");
       const text = document.querySelector('.progress-text');
       const radius = color.r.baseVal.value;
@@ -618,7 +626,8 @@
 
     });
 
-    sort_list = (sort_list) => {
+    const sort_list = (params) => {
+      console.log("sort_list");
       let con_name = ""
       if (g_state.gallery_type == GalleryType.enum.LAYOUT_LIST){
         con_name = ".con-lst";
@@ -630,12 +639,12 @@
       let items = Array.from(container.querySelectorAll(`${con_name} .item`));
 
       items = items.sort((a, b) => {
-        for (const [nm, sort_num] of sort_list) {
+        for (const [nm, sort_num] of params) {
           if (nm == "is_dir") {
             if (a.dataset.is_dir != b.dataset.is_dir) {
               return (a.dataset.is_dir == "true" ? -1 : 1) * sort_num;
             }
-          } else if (["name", "ext"].includes(nm)) {
+          } else if (["name", "ext", "mime"].includes(nm)) {
             const a_lower = a.dataset[nm].toLowerCase();
             const b_lower = b.dataset[nm].toLowerCase();
             const cmp = a_lower.localeCompare(b_lower);
@@ -687,8 +696,8 @@
           -->
         </div>
         <div class="ext-sub">
-          <div class="ext layout-list"><i class="fa-solid fa-list"></i></div>
-          <div class="ext layout-gallery"><i class="fa-solid fa-table-cells"></i></i></div>
+          <div class="ext layout-list"><i class="fa-solid fa-list fa-2x"></i></div>
+          <div class="ext layout-gallery"><i class="fa-solid fa-table-cells fa-2x"></i></i></div>
         </div>
       </div>
       <div class="cur-path">

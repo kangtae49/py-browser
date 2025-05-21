@@ -42,23 +42,36 @@
         send_get_link({});
         send_list_directory({path: null, depth: 0});
       }
-      
+
       window.list_directory = (params) => {
-        console.log("list_directory");
         const jres = JSON.parse(params);
         const res = FolderRes.parse(jres);
+        Promise.resolve(res).then((res) => {
+          async_list_directory(res);
+        });      
+      }
+      
+      const async_list_directory = (res) => {
+        console.log("list_directory");
         const tree_node = document.querySelector("#file-tree");
 
-
         let items = [];
-        const ul = document.createElement("ul");
+        let ul = null;
+        
         if (res.depth == 0) {
+          ul = document.createElement("ul");
           tree_node.innerHTML = "";
           items = [res.item];
           tree_node.appendChild(ul);
         } else {
           items = res.item.items;
-          const li_parent = document.querySelector("li[data-path='" + encodeURIComponent(res.item.path) + "']")
+          const li_parent = document.querySelector("li[data-path='" + encodeURIComponent(res.item.path) + "']");
+          const ul_children = li_parent.querySelector("ul");
+          if (!ul_children){
+            ul = document.createElement("ul");
+          } else {
+            ul = ul_children;
+          }
           li_parent.appendChild(ul);
         }
 
@@ -66,10 +79,11 @@
         for (const item of items) {
           const li = document.createElement("li");
           frag.appendChild(li);
+          li.dataset.is_dir = item.is_dir;
+          li.dataset.path = encodeURIComponent(item.path);
+          li.dataset.name = item.name;
           if (item.is_dir) {
-            li.dataset.is_dir = "true";
             li.dataset.tot = item.tot;
-            li.dataset.path = encodeURIComponent(item.path);
             const div_item = document.createElement("div");
             div_item.classList.add("item");
 
@@ -94,7 +108,6 @@
             div_path_name.addEventListener("click", click_open_path);
             
           } else {
-            li.dataset.path = encodeURIComponent(item.path);
             const div_item = document.createElement("div");
             div_item.classList.add("item");
             
@@ -117,7 +130,9 @@
           }
         }
         ul.appendChild(frag);
-
+        if (ul.querySelectorAll("li").length == res.item.tot) {
+          sort_path(ul, [["is_dir", 1], ["name", 1]]);
+        }
         
         if (res.select_path && (res.depth == 0 || res.page_no == Math.floor(res.item.tot/res.page_size))){
           Promise.resolve(res).then((res) => {
@@ -260,6 +275,44 @@
 
         document.querySelector("li.selected>div").scrollIntoView({ behavior: 'auto', block: 'nearest', inline: 'end' });
       });
+      
+      const sort_path = (ul, params) => {
+        const container = ul;
+        let items = Array.from(container.querySelectorAll("li"));
+
+        items = items.sort((a, b) => {
+          for (const [nm, sort_num] of params) {
+            if (nm == "is_dir") {
+              if (a.dataset.is_dir != b.dataset.is_dir) {
+                return (a.dataset.is_dir == "true" ? -1 : 1) * sort_num;
+              }
+            } else if (["name", "ext", "mime"].includes(nm)) {
+              const a_lower = a.dataset[nm].toLowerCase();
+              const b_lower = b.dataset[nm].toLowerCase();
+              const cmp = a_lower.localeCompare(b_lower);
+              if (cmp != 0) {
+                return cmp * sort_num;
+              }
+            } else if (["size", "mtime"].includes(nm)) {
+              const a_num = parseInt(a.dataset[nm]);
+              const b_num = parseInt(b.dataset[nm]);
+              const cmp = a_num-b_num;
+              if (cmp != 0) {
+                return cmp * sort_num;
+              }
+            }
+          }
+        });
+
+        const fragment = document.createDocumentFragment();
+        items.forEach(item => {
+          fragment.appendChild(item);
+        });
+        container.appendChild(fragment);
+      }
+      
+
+      
     </script>
   </head>
 
