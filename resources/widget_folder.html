@@ -13,14 +13,14 @@
       body { margin: 0; padding: 0; height: 100vh; display: flex;}
       .top-bar {position: fixed; top:0px; width: 100%; background-color: white;}
       .top { display: flex; padding: 0 0 0 5px; gap: 5px; }
-      .top .link { padding: 2px; color: #f4a261;}
+      .top .link { padding: 2px; color: #f4a261; cursor: pointer;}
       .top .link:hover { background-color: #bad0e4; }
       .container { padding:0; margin:0; font-size: 0.8em}
       .tree { padding: 25px 0 0 0px; margin: 0; }
       .tree ul { padding: 0 0 0 8px; margin: 0;}
       .tree li { list-style: none; padding: 0; margin:0; white-space: nowrap;}
       .tree .item { padding: 0 3px 1px 3px; margin: 0; cursor: pointer; display: inline-block;}
-      .tree .item:hover { background-color: #bad0e4; }
+      .tree .item:hover { background-color: #e4e9ee; }
       .tree li.selected>div {background-color: #bad0e4;}
       .tree .item .subitem { padding: 0; margin: 0; display: inline-block;}
       .fa-folder, .fa-folder-plus { color: #f4a261; margin-right: 5px;}
@@ -96,6 +96,7 @@
               </div>
             `
             const div_path_icon = div_item.querySelector(".path-icon");
+            div_path_icon.title = item.tot;
             const div_path_name = div_item.querySelector(".path-name");
             div_path_name.title = item.path;
             div_path_name.innerHTML = item.name;
@@ -260,9 +261,6 @@
           } else {
             parent_path_icon.click();
           }
-          // if(parent_path_icon){
-          //   parent_path_icon.click();
-          // }
         } else if(event.key === "ArrowRight") {
           if (li_selected.dataset.is_dir){
             div_path_icon.click();

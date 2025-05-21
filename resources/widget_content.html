@@ -23,6 +23,7 @@
     .ext-container .ext-sub .ext[class*="on"] i { color: #2a9d8f; }
     .ext-container .ext-sub .ext i { color: #d4c5ba;}
 
+    .top-bar .dir-up {display: inline-block; cursor:pointer; color: #1e3050;}
     .top-bar .dir-browser {display: inline-block; cursor:pointer; color: #1e3050;}
     .top-bar .cell.cur-dir {cursor: pointer; display: inline-block;}
     .top-bar .cell.cur-dir .dir-all {display: inline-block;}
@@ -39,56 +40,37 @@
     .file-header .cell.ext { flex: 0 0 50px; text-align: center;}
     .file-header .cell.date { flex: 0 0 120px; text-align: right;}
     
-    .con-gal { display: flex; flex-wrap: wrap; gap: 0px; padding: 85px 5px 0 5px;}    
+    .con-gal { display: flex; flex-wrap: wrap; gap: 0px; padding: 105px 5px 0 5px;}    
     .con-gal .item { width: 20%; display: flex; padding: 0 0px 0 1px;}
-    .con-gal .item:hover { background-color: #bad0e4; cursor: pointer;}
     .con-gal .item .cell { width: 100%; height: 100%; object-fit: scale-down; /* object-fit: contain; */ }
-    .con-gal .item .cell.icon { flex: 0 0 16px;}
+    .con-gal .item .cell.icon { flex: 0 0 16px; cursor: pointer;}
     .con-gal .item .cell.file { flex: 1}
     .con-gal .item .cell.file { width: 100%; height: 100%; overflow: hidden; text-overflow: ellipsis; }
+    .con-gal .item .cell .icon:hover { background-color: #bad0e4; cursor: pointer;}
+    .con-gal .item .cell .filename:hover { background-color: #bad0e4; cursor: pointer;}
+    .con-gal .item img.cell:hover { background-color: #bad0e4; cursor: pointer;}
     .con-gal .item .cell .icon{ display: inline-block; }
-    .con-gal .item .cell .filename{ display: inline-block; }
+    .con-gal .item .cell .filename{ display: inline-block; height: 100%; }
+
     
     .con-lst { display: flex; flex-direction: column;  font-family: sans-serif; padding: 85px 5px 0 5px; }
-    .con-lst .item:hover {background-color: #bad0e4;}
+    .con-lst .item:hover {background-color: #e4e9ee;}
     .con-lst .item .cell { padding: 0; box-sizing: border-box; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;}
     .con-lst .item .cell.file { flex: 1; text-align: left; }
-    .con-lst .item .cell.file .i-file {cursor: pointer;}
+    .con-lst .item .cell.file .icon:hover {background-color: #bad0e4;}
+    .con-lst .item .cell.file .filename:hover {background-color: #bad0e4;}
+    .con-lst .item .cell.file .icon {cursor: pointer;}
+    .con-lst .item .cell.file .filename {cursor: pointer;}
     .con-lst .item .cell.browser { flex: 0 0 16px; text-align: center; cursor:pointer; color: #1e3050;}
     .con-lst .item .cell.size { flex: 0 0 80px; text-align: right;}
     .con-lst .item .cell.ext { flex: 0 0 50px; text-align: center;}
     .con-lst .item .cell.date { flex: 0 0 120px; text-align: right;}
 
-
-    .progress {
-      position: relative;
-      width: 40px;
-      height: 40px;
-    }
-
-    .progress-text {
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      font-size: 0.4em;
-      font-weight: bold;
-    }
-
-    .ring{
-      width: 100%;
-      height: 100%;
-    }
-
+    .progress { position: relative; width: 40px; height: 40px; }
+    .progress-text { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 0.4em; font-weight: bold; }
+    .ring{ width: 100%; height: 100%; }
     .ring .bg {stroke: #e6e6e6;}
-
-    .ring .color {
-      stroke: #00aaff;
-      transform: rotate(-90deg);
-      transform-origin: 50% 50%;
-      transition: stroke-dashoffset 0.5s ease;
-    }
-
+    .ring .color { stroke: #00aaff; transform: rotate(-90deg); transform-origin: 50% 50%; transition: stroke-dashoffset 0.5s ease;}
 
     .fa-folder { color: #f4a261; margin-right: 5px; }
     .fa-folder-open { color: #f4a261; margin-right: 5px; }
@@ -100,7 +82,20 @@
     .fa-volume-high { color: #2a9d8f; margin-right: 5px; }
     .fa-ellipsis { color: #2a9d8f; margin-right: 5px; }
     .fa-list { color: #2a9d8f;}
-    .fa-table-cells { color: #2a9d8f; }
+    .fa-table-cells { color: #2c2a9d; }
+
+    .ordering {cursor: pointer; display: inline-block;}
+    .ordering i { color: #2b0863;}
+    .ordering[data-ordering="asc"] .asc {display: ""; color: #036117;}
+    .ordering[data-ordering="asc"] .desc {display: none}
+    .ordering[data-ordering="asc"] .dash {display: none}
+    .ordering[data-ordering="desc"] .asc {display: none}
+    .ordering[data-ordering="desc"] .desc {display: ""; color: #036117;}
+    .ordering[data-ordering="desc"] .dash {display: none}
+    .ordering[data-ordering="dash"] .asc {display: none}
+    .ordering[data-ordering="dash"] .desc {display: none}
+    .ordering[data-ordering="dash"] .dash {display: ""}
+
   </style>
   <script>
     let g_state = null;
@@ -108,7 +103,7 @@
     let g_frag_lst = null;
     let g_frag_gal = null;
     let g_date_formatter = null;
-    
+    let g_sort_params = [["is_dir", 1], ["name", 1]];
     Pb.addListener((params) => {
       g_date_formatter = getDateFormatter();
       const jres = JSON.parse(params);
@@ -132,8 +127,6 @@
       document.querySelector(".layout-list").addEventListener("click", click_layout_list);
       document.querySelector(".layout-gallery").addEventListener("click", click_layout_gallery);
       document.querySelector('.slider').addEventListener('input', change_slider);
-
-      
     }
 
     window.list_directory = (params) => {
@@ -155,7 +148,6 @@
         } else if(g_state.gallery_type == GalleryType.enum.LAYOUT_GALLERY) {
           g_frag_gal = null;
         }
-
       }
 
       if (g_state.gallery_type == GalleryType.enum.LAYOUT_LIST) {
@@ -215,6 +207,13 @@
       const dataset = event.target.closest('.data').dataset;
       send_open_path({ path: dataset.path, open_path_type: OpenPathType.enum.BROWSER });
     }
+
+    const click_parent_path = (event) => {
+      console.log("click_parent_path");
+      window.getSelection().removeAllRanges();
+      document.querySelector(".parent-dir")?.click();
+    }
+
 
     const click_layout_list = (event) => {
       console.log("click .layout-list");
@@ -285,13 +284,11 @@
     const show_layout = (gallery_type) => {
       if (gallery_type == GalleryType.enum.LAYOUT_LIST) {
         document.querySelector(".con-lst").style.display = "";
-        document.querySelector(".fileheader").style.display = "";
         document.querySelector(".slider-container").style.display = "none";
         document.querySelector(".con-gal").style.display = "none";
 
       } else if(gallery_type == GalleryType.enum.LAYOUT_GALLERY) {
         document.querySelector(".con-lst").style.display = "none";
-        document.querySelector(".fileheader").style.display = "none";
         document.querySelector(".slider-container").style.display = "";
         document.querySelector(".con-gal").style.display = "";
       }
@@ -305,6 +302,8 @@
       const cur_dir_icon = cur_dir.querySelector("i");
       const cur_dir_browser = cur_dir.querySelector(".dir-browser");
       cur_dir_browser.addEventListener("click", click_path_browser);
+      const cur_dir_up = cur_dir.querySelector(".dir-up");
+      cur_dir_up.addEventListener("click", click_parent_path);
 
       const cur_dir_all = document.querySelector(".cur-dir .dir-all");
       const arr_dir = res.path.split("/").filter((x) => x);
@@ -320,6 +319,9 @@
         div_part.dataset.path = res.path;
         div_part.innerHTML = arr_dir[i];
         div_part.addEventListener("click", click_cur_dir_part);
+        if (i == arr_dir.length-2) {
+          div_part.classList.add("parent-dir");
+        }
         cur_dir_all.appendChild(div_part);
         cur_dir_all.append("/");
       }
@@ -377,15 +379,20 @@
         const div_filename = div_item.querySelector(".filename");
         const div_size = div_item.querySelector(".cell.size");
         const div_browser = div_item.querySelector(".cell.browser");
+        if (item.is_dir){
+          div_icon.title = item.tot;
+        } else {
+          div_icon.title = item.name;
+        }
         div_size.innerHTML = formatFileSize(item.size);
         div_size.title = item.size;
         div_filename.innerHTML = item.name;
-        div_i_file.title = item.name;
+        div_filename.title = item.name;
         g_frag_lst.appendChild(div_item.cloneNode(true));
       }
       container.appendChild(frag);
       if (g_frag_lst.childElementCount == res.item.tot){
-        sort_list([["is_dir", "1"], ["name", "1"]]);
+        sort_list(g_sort_params);
       }
 
       const cur_part_cnt = g_frag_lst.childElementCount;
@@ -411,7 +418,7 @@
       Promise.resolve().then( async () => {
         await new Promise(resolve => setTimeout(resolve, 1));
         setProgress(100);
-        sort_list([["is_dir", "1"], ["name", "1"]]);
+        sort_list(g_sort_params);
       })
     }
 
@@ -434,7 +441,7 @@
         const slider = document.querySelector('.slider');
         slider.dispatchEvent(new Event('input', { bubbles: true }));
         setProgress(100);
-        sort_list([["is_dir", "1"], ["name", "1"]]);
+        sort_list(g_sort_params);
       });
 
     }
@@ -470,7 +477,6 @@
 
         div_item.style.width = width;
         div_item.classList.add("item", "data");
-        div_item.title = item.name;
         div_item.dataset.path = item.path;
         div_item.dataset.is_dir = item.is_dir;
         div_item.dataset.mtime = item.mtime;
@@ -485,6 +491,7 @@
               <source src="" type="${item.mime}"  />
             </video>
           `;
+          div_item.title = item.name;
           div_item.querySelector("source").src = item.path;
         } else if(item.mime.startsWith("audio/")) {
           div_item.innerHTML = `
@@ -492,11 +499,13 @@
               <source src="" type="${item.mime}"  />
             </audio>
           `;
+          div_item.title = item.name;
           div_item.querySelector("source").src = item.path;
         } else if(item.mime.startsWith("image/")) {
           div_item.innerHTML = `
             <img src="" loading="lazy" class="cell"/>
           `;
+          div_item.title = item.name;
           div_item.querySelector("img").src = item.path;
         } else if(item.is_dir) {
           div_item.innerHTML = `
@@ -505,6 +514,8 @@
               <div class="filename"></div>
             </div>
           `;
+          div_item.querySelector(".icon").title = item.tot; 
+          div_item.querySelector(".filename").title = item.name;
           div_item.querySelector(".filename").innerHTML = change_filename(item.name);
         } else {
           div_item.innerHTML = `
@@ -513,6 +524,7 @@
               <div class="filename"></div>
             </div>
             `;
+          div_item.title = item.name;
           div_item.querySelector(".filename").innerHTML = change_filename(item.name);
         }
         g_frag_gal.appendChild(div_item.cloneNode(true));
@@ -521,7 +533,7 @@
 
       await new Promise(resolve => setTimeout(resolve, 0));
       if (g_frag_gal.childElementCount == res.item.tot){
-        sort_list([["is_dir", "1"], ["name", "1"]]);
+        sort_list(g_sort_params);
         document.querySelector('.slider').addEventListener('input', change_slider);
       }
       const cur_part_cnt = g_frag_gal.childElementCount;
@@ -588,7 +600,7 @@
       if (dataset == null){
         return;
       }
-
+      window.getSelection().removeAllRanges();
       if (target.closest(".con-lst")) {
         if (dataset.is_dir == "true" && target.closest(".icon")){
           click_path(event);
@@ -605,6 +617,41 @@
         } else if (dataset.is_dir == "false" && target.closest(".icon")){
           click_path_application(event);
         }
+      } else if (target.closest(".ordering")) {
+        const dataset = target.closest(".ordering").dataset;
+        if (dataset.ordering == "asc") {
+          dataset.ordering = "desc"
+        } else if (dataset.ordering == "desc") {
+          dataset.ordering = "asc";
+        } else if (dataset.ordering == "dash") {
+          dataset.ordering = "asc";
+        } else {
+          return;
+        }
+
+        const nm = dataset.ordering_name;
+        const ordering = dataset.ordering;
+        document.querySelectorAll(".ordering").forEach((elem) => {
+          elem.dataset.ordering = "dash";
+        });
+        dataset.ordering = ordering;
+        let n_ordering = 0;
+        if (dataset.ordering == "asc"){
+          n_ordering = 1;
+        } else if (dataset.ordering == "desc") {
+          n_ordering = -1;
+        }
+        if (nm == "name") {
+          g_sort_params = [["is_dir", 1], [nm, n_ordering]];
+        } else if (nm == "size") {
+          g_sort_params = [[nm, n_ordering], ["is_dir", 1], ["name", 1]];
+        } else if (nm == "ext") {
+          g_sort_params = [[nm, n_ordering], ["is_dir", 1], ["name", 1]];
+        } else if (nm == "mtime") {
+          g_sort_params = [[nm, n_ordering], ["is_dir", 1], ["name", 1]];
+        }
+        sort_list(g_sort_params);
+
       }
     });
 
@@ -614,6 +661,7 @@
       if (dataset == null){
         return;
       }
+      window.getSelection().removeAllRanges();
       if (target.closest(".con-lst")) {
         if (target.closest(".filename")) {
           click_path_application(event);
@@ -627,7 +675,7 @@
     });
 
     const sort_list = (params) => {
-      console.log("sort_list");
+      console.log("sort_list - start");
       let con_name = ""
       if (g_state.gallery_type == GalleryType.enum.LAYOUT_LIST){
         con_name = ".con-lst";
@@ -668,6 +716,7 @@
         fragment.appendChild(item);
       });
       container.appendChild(fragment);
+      console.log("sort_list - end");
     }
 
 
@@ -704,17 +753,46 @@
         <div class="cell cur-dir data"><i class="fa-solid fa-folder"></i>
           <div class="dir-all">
           </div>
+          <div class="dir-up"><i class="fa-solid fa-arrow-up"></i></div>
           <div class="dir-browser"><i class="fa-solid fa-globe"></i></div>
         </div>
       </div>
       <div>
         <div class="fileheader">
           <div class="file-header">
-            <div class="cell file">name</div>
+            <div class="cell file">
+              <div class="ordering data" data-ordering_name="name" data-ordering="asc">
+                <i class="fa-solid fa-circle-chevron-up asc"></i>
+                <i class="fa-solid fa-circle-chevron-down desc"></i>
+                <i class="fa-solid fa-circle-minus dash"></i>
+                name 
+              </div>
+            </div>
             <div class="cell browser"></div>
-            <div class="cell size">size</div>
-            <div class="cell ext">ext</div>
-            <div class="cell date">date</div>
+            <div class="cell size">
+              <div class="ordering data" data-ordering_name="size" data-ordering="dash">
+                <i class="fa-solid fa-circle-chevron-up asc"></i>
+                <i class="fa-solid fa-circle-chevron-down desc"></i>
+                <i class="fa-solid fa-circle-minus dash"></i>
+                size 
+              </div>
+            </div>
+            <div class="cell ext">
+              <div class="ordering data" data-ordering_name="ext"data-ordering="dash">
+                <i class="fa-solid fa-circle-chevron-up asc"></i>
+                <i class="fa-solid fa-circle-chevron-down desc"></i>
+                <i class="fa-solid fa-circle-minus dash"></i>
+                ext 
+              </div>
+            </div>
+            <div class="cell date">
+              <div class="ordering data" data-ordering_name="mtime" data-ordering="dash">
+                <i class="fa-solid fa-circle-chevron-up asc"></i>
+                <i class="fa-solid fa-circle-chevron-down desc"></i>
+                <i class="fa-solid fa-circle-minus dash"></i>
+                date 
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -732,7 +810,6 @@
 
   </div>
 </body>
-
 
 </html>
 
