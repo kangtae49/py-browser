@@ -12,6 +12,12 @@ class OpenPathType(Enum):
     WEBVIEW = "WEBVIEW"
     APPLICATION = "APPLICATION"
     BROWSER = "BROWSER"
+    CMD = "CMD"
+
+class ContextmenuType(Enum):
+    ONLY_DIR = "ONLY_DIR"
+    ONLY_FILE = "ONLY_FILE"
+    ALL = "ALL"
 
 class GalleryType(Enum):
     LAYOUT_LIST = "LAYOUT_LIST"

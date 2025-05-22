@@ -13,10 +13,13 @@
 
   <style>
     body { margin: 0; padding: 0; height: 100vh; }
-    .container { padding: 0; margin: 0; font-size: 0.8em }
+    .container { padding: 0; margin: 0; font-size: 0.8em; height: 100%; }
     .top-bar { position: fixed; top: 0px; padding-top: 0px; width: 100%; background-color: white; }
-    .slider-container { width: 100%; height: 25px; }
-    .slider { width: 100%; height: 2px; }
+    .slider-container { width: 100%; height: 25px; margin: -6px;}
+    .slider { width: 100%; height: 1px; cursor: pointer; }
+    input[type="range" i] { background: #c9b6b6; appearance: none; margin:0;}
+    input[type=range]::-webkit-slider-thumb { height: 14px; width: 14px; margin-top: 0px; background: #f4a261; appearance: none; border-radius: 50%; }
+
     .ext-container { display: flex; justify-content: space-between; }
     .ext-container .ext-sub { display: flex; }
     .ext-container .ext-sub .ext { padding: 0 2px 0 2px; cursor: pointer;}
@@ -30,38 +33,30 @@
     .top-bar .cell.cur-dir .dir-all .dir-part {display: inline-block; cursor: pointer;}
     .top-bar .cell.cur-dir .dir-all .dir-part:hover { background-color: #bad0e4;}
 
-
     .fileheader { padding: 2px 5px 2px 5px; background-color: #f0f0f0; font-weight: bold;  }
     .file-header, .item { display: flex; }
     .file-header .cell { padding: 0; box-sizing: border-box; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;}
     .file-header .cell.file { flex: 1; text-align: left; }
-    .file-header .cell.browser { flex: 0 0 16px; text-align: center; cursor:pointer; color: #1e3050;}
+    .file-header .cell.browser { flex: 0 0 16px; text-align: center; color: #1e3050;}
     .file-header .cell.size { flex: 0 0 80px; text-align: right;}
     .file-header .cell.ext { flex: 0 0 50px; text-align: center;}
     .file-header .cell.date { flex: 0 0 120px; text-align: right;}
     
-    .con-gal { display: flex; flex-wrap: wrap; gap: 0px; padding: 105px 5px 0 5px;}    
+    .con-gal { display: flex; flex-wrap: wrap; gap: 0px; padding: 100px 5px 0 5px;}    
     .con-gal .item { width: 20%; display: flex; padding: 0 0px 0 1px;}
-    .con-gal .item .cell { width: 100%; height: 100%; object-fit: scale-down; /* object-fit: contain; */ }
-    .con-gal .item .cell.icon { flex: 0 0 16px; cursor: pointer;}
-    .con-gal .item .cell.file { flex: 1}
-    .con-gal .item .cell.file { width: 100%; height: 100%; overflow: hidden; text-overflow: ellipsis; }
-    .con-gal .item .cell .icon:hover { background-color: #bad0e4; cursor: pointer;}
-    .con-gal .item .cell .filename:hover { background-color: #bad0e4; cursor: pointer;}
-    .con-gal .item img.cell:hover { background-color: #bad0e4; cursor: pointer;}
+    .con-gal .item .cell { display: flex; width: 100%; height: 100%; object-fit: scale-down; /* object-fit: contain; */ }
+    .con-gal .item .cell .dir { flex: 0 0 16px; }
+    .con-gal .item .cell .file { flex: 0 0 16px; }
+    .con-gal .item .cell .name { flex: 1}
+    .con-gal .item .cell .name { width: 100%; height: 100%; overflow: hidden; text-overflow: ellipsis; }
     .con-gal .item .cell .icon{ display: inline-block; }
-    .con-gal .item .cell .filename{ display: inline-block; height: 100%; }
-
+    .con-gal .item .cell .name{ display: inline-block; height: 100%; }
     
     .con-lst { display: flex; flex-direction: column;  font-family: sans-serif; padding: 85px 5px 0 5px; }
     .con-lst .item:hover {background-color: #e4e9ee;}
     .con-lst .item .cell { padding: 0; box-sizing: border-box; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;}
     .con-lst .item .cell.file { flex: 1; text-align: left; }
-    .con-lst .item .cell.file .icon:hover {background-color: #bad0e4;}
-    .con-lst .item .cell.file .filename:hover {background-color: #bad0e4;}
-    .con-lst .item .cell.file .icon {cursor: pointer;}
-    .con-lst .item .cell.file .filename {cursor: pointer;}
-    .con-lst .item .cell.browser { flex: 0 0 16px; text-align: center; cursor:pointer; color: #1e3050;}
+    .con-lst .item .cell.browser { flex: 0 0 16px; text-align: center; color: #1e3050;}
     .con-lst .item .cell.size { flex: 0 0 80px; text-align: right;}
     .con-lst .item .cell.ext { flex: 0 0 50px; text-align: center;}
     .con-lst .item .cell.date { flex: 0 0 120px; text-align: right;}
@@ -84,8 +79,23 @@
     .fa-list { color: #2a9d8f;}
     .fa-table-cells { color: #2c2a9d; }
 
-    .ordering {cursor: pointer; display: inline-block;}
-    .ordering i { color: #2b0863;}
+    .container .dir.click {cursor: pointer;}
+    .container .file.click {cursor: pointer;}
+    .container .name.click {cursor: pointer;}
+    .container img.click {cursor: pointer;}
+    .container .dir.click:hover {background-color: #bad0e4;}
+    .container .file.click:hover {background-color: #bad0e4;}
+    .container .name.click:hover {background-color: #bad0e4;}
+    .container img.click:hover {background-color: #bad0e4;}
+
+    .container .browser.click {cursor: pointer;}
+    .container .browser.click:hover {background-color: #bad0e4;}
+    .ordering.click {cursor:pointer}
+    .ordering.click:hover {background-color: #bad0e4;}
+
+
+    .ordering {display: inline-block;}
+    .ordering i { color: #a8a4db;}
     .ordering[data-ordering="asc"] .asc {display: ""; color: #036117;}
     .ordering[data-ordering="asc"] .desc {display: none}
     .ordering[data-ordering="asc"] .dash {display: none}
@@ -96,9 +106,14 @@
     .ordering[data-ordering="dash"] .desc {display: none}
     .ordering[data-ordering="dash"] .dash {display: ""}
 
+    #context-menu { position: absolute; background: #e7e0e0; border: 1px solid #161515; box-shadow: 2px 2px 5px rgba(0,0,0,0.2); z-index: 1000; padding: 5px; font-size: 0.8em}
+    #context-menu .item { padding: 5px; cursor: pointer; }
+    #context-menu .item:hover { background-color: #ffffff;  }
+
   </style>
   <script>
     let g_state = null;
+    let g_contextmenu = null;
 
     let g_frag_lst = null;
     let g_frag_gal = null;
@@ -115,7 +130,14 @@
       const jres = JSON.parse(params);
       console.log("on_load");
       const res = OnLoadRes.parse(jres);
+      
+      async_on_load(res);
+    }
+
+    const async_on_load = async (res) => {
       g_state = res.state;
+      g_contextmenu = res.contextmenu;
+
       console.log(res.state);
       document.querySelector(".con-lst").innerHTML = "";
       document.querySelector(".con-gal").innerHTML = "";
@@ -127,6 +149,83 @@
       document.querySelector(".layout-list").addEventListener("click", click_layout_list);
       document.querySelector(".layout-gallery").addEventListener("click", click_layout_gallery);
       document.querySelector('.slider').addEventListener('input', change_slider);
+
+      document.addEventListener("copy", copy_gallery_filename);
+      document.addEventListener("click", click_event);
+      document.addEventListener("dblclick", click_event);
+      document.addEventListener("contextmenu", click_event);
+      document.querySelector("#context-menu").addEventListener("mouseleave", click_event);
+
+    } 
+
+    const open_contextmenu = (event) => {
+      const dataset = event.target.closest(".data").dataset;
+      const div_menu = document.querySelector("#context-menu");
+      console.log(`x: ${event.pageX}, ${event.pageY}`);
+      div_menu.classList.add(["data"]);
+      div_menu.dataset.path = dataset.path;
+      div_menu.dataset.name = dataset.name;
+      div_menu.dataset.is_dir = dataset.is_dir;
+      div_menu.style.display = "block";
+      let icon = "fa-file";
+      let dir_or_file = "";
+      if (dataset.is_dir == "true" && dataset.tot != "0"){
+        icon = "fa-folder-plus";
+        dir_or_file = "dir";
+      } else if (dataset.is_dir == "true" && dataset.tot != "0") {
+        icon = "fa-folder";
+        dir_or_file = "dir";
+      } else {
+        icon = "fa-file";
+        dir_or_file = "file";
+      }
+      div_menu.innerHTML = `
+        <div class="open item context click">
+          <span class="i-file">
+            <span class="${dir_or_file} click"><i class="fa-solid ${icon}"></i></span>
+            <span class="name click"></span>
+        </div>
+      `;
+      div_menu.querySelector(".name").innerHTML = dataset.name;
+
+      g_contextmenu.forEach((menu) => {
+        const item = document.createElement("div");
+        item.classList.add("item", "context", "click");
+        item.innerHTML = menu.name;
+        item.dataset.name = menu.name;
+        div_menu.appendChild(item);
+      });
+      const rect = div_menu.getBoundingClientRect();
+      let x = Math.min(event.pageX + rect.width, window.scrollX + window.innerWidth) - rect.width;
+      let y = Math.min(event.pageY + rect.height, window.scrollY + window.innerHeight) - rect.height;
+      x = Math.max(window.scrollX, x);
+      y = Math.max(window.scrollY, y);
+      div_menu.style.left = `${x - 5}px`;
+      div_menu.style.top = `${y - 5}px`;
+
+    }
+    const close_contextmenu = (event) => {
+      document.querySelector("#context-menu").style.display = 'none';
+    }
+
+    const click_path_contextmenu = (event) => {
+      console.log("click_path_contextmenu");
+      window.getSelection().removeAllRanges();
+
+      const div_menu = event.target.closest("#context-menu");
+      const path = event.target.closest("#context-menu").dataset.path;
+      const div_item = event.target.closest('.item');
+      const cmd_name = div_item.dataset.name;
+      if (div_item.classList.contains("open")){
+        if (div_menu.dataset.is_dir == "true"){
+          send_open_path({ path: path, open_path_type: OpenPathType.enum.OPEN_PATH });
+        } else {
+          send_open_path({ path: path, open_path_type: OpenPathType.enum.BROWSER });
+        }
+      } else {
+        send_open_path({ path: path, cmd_name: cmd_name, open_path_type: OpenPathType.enum.CMD });
+      }
+      close_contextmenu(event);
     }
 
     window.list_directory = (params) => {
@@ -148,6 +247,11 @@
         } else if(g_state.gallery_type == GalleryType.enum.LAYOUT_GALLERY) {
           g_frag_gal = null;
         }
+        const container = document.querySelector("body .container");
+        container.classList.add("data", "context", "click");
+        container.dataset.path = res.item.path;
+        container.dataset.name = res.item.name;
+        container.dataset.is_dir = res.item.is_dir;
       }
 
       if (g_state.gallery_type == GalleryType.enum.LAYOUT_LIST) {
@@ -207,6 +311,8 @@
       const dataset = event.target.closest('.data').dataset;
       send_open_path({ path: dataset.path, open_path_type: OpenPathType.enum.BROWSER });
     }
+
+
 
     const click_parent_path = (event) => {
       console.log("click_parent_path");
@@ -343,17 +449,21 @@
       const frag = document.createDocumentFragment();
       for (const [idx, item] of res.item.items.entries()) {
         let icon = "fa-file";
+        let dir_or_file = "";
         if (item.is_dir && item.tot > 0){
           icon = "fa-folder-plus";
+          dir_or_file = "dir";
         } else if (item.is_dir && item.tot == 0) {
           icon = "fa-folder";
+          dir_or_file = "dir";
         } else {
           icon = "fa-file";
+          dir_or_file = "file";
         }
         const div_item = document.createElement("div");
         frag.appendChild(div_item);
 
-        div_item.classList.add("item", "data");
+        div_item.classList.add("item", "data", "click");
         div_item.dataset.path = item.path;
         div_item.dataset.is_dir = item.is_dir;
         div_item.dataset.mtime = item.mtime;
@@ -365,24 +475,24 @@
         div_item.innerHTML = `
           <div class="cell file">
             <span class="i-file">
-              <span class="icon"><i class="fa-solid ${icon}"></i></span>
-              <span class="filename"></span>
+              <span class="${dir_or_file} click"><i class="fa-solid ${icon}"></i></span>
+              <span class="name click"></span>
             </span>
           </div>
-          <div class="cell browser"><i class="fa-solid fa-globe"></i></div>
+          <div class="cell browser click"><i class="fa-solid fa-globe"></i></div>
           <div class="cell size"></div>
           <div class="cell ext">${item.ext}</div>
           <div class="cell date">${toDate(item.mtime)}</div>
         `
         const div_i_file = div_item.querySelector(".i-file");
         const div_icon = div_item.querySelector(".icon");
-        const div_filename = div_item.querySelector(".filename");
+        const div_filename = div_item.querySelector(".name");
         const div_size = div_item.querySelector(".cell.size");
         const div_browser = div_item.querySelector(".cell.browser");
         if (item.is_dir){
-          div_icon.title = item.tot;
+          div_item.querySelector(".dir").title = item.tot;
         } else {
-          div_icon.title = item.name;
+          div_item.querySelector(".file").title = item.name;
         }
         div_size.innerHTML = formatFileSize(item.size);
         div_size.title = item.size;
@@ -464,19 +574,23 @@
       const frag = document.createDocumentFragment();
       for (const [idx, item] of res.item.items.entries()) {
         let icon = "fa-file";
+        let dir_or_file = "";
         if (item.is_dir && item.tot > 0){
           icon = "fa-folder-plus";
+          dir_or_file = "dir";
         } else if (item.is_dir && item.tot == 0) {
           icon = "fa-folder";
+          dir_or_file = "dir";
         } else {
           icon = "fa-file";
+          dir_or_file = "file";
         }
 
         const div_item = document.createElement("div");
         frag.appendChild(div_item);
 
         div_item.style.width = width;
-        div_item.classList.add("item", "data");
+        div_item.classList.add("item", "data", "click");
         div_item.dataset.path = item.path;
         div_item.dataset.is_dir = item.is_dir;
         div_item.dataset.mtime = item.mtime;
@@ -503,29 +617,29 @@
           div_item.querySelector("source").src = item.path;
         } else if(item.mime.startsWith("image/")) {
           div_item.innerHTML = `
-            <img src="" loading="lazy" class="cell"/>
+            <img src="" loading="lazy" class="cell dbl click"/>
           `;
           div_item.title = item.name;
           div_item.querySelector("img").src = item.path;
         } else if(item.is_dir) {
           div_item.innerHTML = `
             <div class="cell i-file">
-              <div class="icon"><i class="fa-solid ${icon}"></i></div>
-              <div class="filename"></div>
+              <div class="${dir_or_file} click"><i class="fa-solid ${icon}"></i></div>
+              <div class="name click"></div>
             </div>
           `;
-          div_item.querySelector(".icon").title = item.tot; 
-          div_item.querySelector(".filename").title = item.name;
-          div_item.querySelector(".filename").innerHTML = change_filename(item.name);
+          div_item.querySelector(".dir").title = item.tot; 
+          div_item.querySelector(".name").title = item.name;
+          div_item.querySelector(".name").innerHTML = change_filename(item.name);
         } else {
           div_item.innerHTML = `
             <div class="cell i-file">
-              <div class="icon"><i class="fa-solid ${icon}"></i></div>
-              <div class="filename"></div>
+              <div class="${dir_or_file} click"><i class="fa-solid ${icon}"></i></div>
+              <div class="name click"></div>
             </div>
             `;
           div_item.title = item.name;
-          div_item.querySelector(".filename").innerHTML = change_filename(item.name);
+          div_item.querySelector(".name").innerHTML = change_filename(item.name);
         }
         g_frag_gal.appendChild(div_item.cloneNode(true));
       }
@@ -591,89 +705,6 @@
       text.textContent = `${percent}%`;
     }
 
-
-    document.addEventListener("copy", copy_gallery_filename);
-
-    document.addEventListener("click", (event) => {
-      const target = event.target;
-      const dataset = target.closest(".data")?.dataset;
-      if (dataset == null){
-        return;
-      }
-      window.getSelection().removeAllRanges();
-      if (target.closest(".con-lst")) {
-        if (dataset.is_dir == "true" && target.closest(".icon")){
-          click_path(event);
-        } else if (dataset.is_dir == "false" && target.closest(".icon")) {
-          click_path_application(event);
-        } else if (target.closest(".browser")) {
-          click_path_browser(event);
-        }
-      } else if (target.closest(".con-gal")) {
-        if (target.tagName == "IMG"){
-          click_path_browser(event);
-        } else if (dataset.is_dir == "true" && target.closest(".icon")){
-          click_path(event);
-        } else if (dataset.is_dir == "false" && target.closest(".icon")){
-          click_path_application(event);
-        }
-      } else if (target.closest(".ordering")) {
-        const dataset = target.closest(".ordering").dataset;
-        if (dataset.ordering == "asc") {
-          dataset.ordering = "desc"
-        } else if (dataset.ordering == "desc") {
-          dataset.ordering = "asc";
-        } else if (dataset.ordering == "dash") {
-          dataset.ordering = "asc";
-        } else {
-          return;
-        }
-
-        const nm = dataset.ordering_name;
-        const ordering = dataset.ordering;
-        document.querySelectorAll(".ordering").forEach((elem) => {
-          elem.dataset.ordering = "dash";
-        });
-        dataset.ordering = ordering;
-        let n_ordering = 0;
-        if (dataset.ordering == "asc"){
-          n_ordering = 1;
-        } else if (dataset.ordering == "desc") {
-          n_ordering = -1;
-        }
-        if (nm == "name") {
-          g_sort_params = [["is_dir", 1], [nm, n_ordering]];
-        } else if (nm == "size") {
-          g_sort_params = [[nm, n_ordering], ["is_dir", 1], ["name", 1]];
-        } else if (nm == "ext") {
-          g_sort_params = [[nm, n_ordering], ["is_dir", 1], ["name", 1]];
-        } else if (nm == "mtime") {
-          g_sort_params = [[nm, n_ordering], ["is_dir", 1], ["name", 1]];
-        }
-        sort_list(g_sort_params);
-
-      }
-    });
-
-    document.addEventListener("dblclick", (event) => {
-      const target = event.target;
-      const dataset = target.closest(".data")?.dataset;
-      if (dataset == null){
-        return;
-      }
-      window.getSelection().removeAllRanges();
-      if (target.closest(".con-lst")) {
-        if (target.closest(".filename")) {
-          click_path_application(event);
-        }
-      } else if (target.closest(".con-gal")) {
-        if (target.closest(".filename")){
-          click_path_application(event);
-        }
-      }
-
-    });
-
     const sort_list = (params) => {
       console.log("sort_list - start");
       let con_name = ""
@@ -720,10 +751,84 @@
     }
 
 
+    const click_event = (event) => {
+      const target = event.target;
+      if (target.closest(".click")){
+        event.stopPropagation();
+        event.preventDefault();
+      } else {
+        return;
+      }
+
+      const dataset = target.closest(".data")?.dataset;
+      window.getSelection().removeAllRanges();
+      
+      if (event.type == "contextmenu") {
+        open_contextmenu(event);
+      } else if (target.closest("#context-menu") && event.type == "mouseleave") {
+        close_contextmenu(event);
+      } else if (target.closest("#context-menu .context.click")) {
+        click_path_contextmenu(event);
+      } else if (target.closest(".click.browser")) {
+        click_path_browser(event);
+      } else if (target.closest(".click.dir")) {
+        click_path(event);
+      } else if (target.closest(".click.file") && event.type == "dblclick") {
+        click_path_application(event);
+      } else if (target.closest(".click.name") && event.type == "dblclick") {
+        click_path_application(event);
+      } else if (target.closest("img.click") && event.type == "dblclick") {
+        click_path_browser(event);
+      } else if (target.closest(".click.ordering")) {
+        const dataset = target.closest(".ordering").dataset;
+        if (dataset.ordering == "asc") {
+          dataset.ordering = "desc"
+        } else if (dataset.ordering == "desc") {
+          dataset.ordering = "asc";
+        } else if (dataset.ordering == "dash") {
+          dataset.ordering = "asc";
+        } else {
+          return;
+        }
+
+        const nm = dataset.ordering_name;
+        const ordering = dataset.ordering;
+        document.querySelectorAll(".ordering").forEach((elem) => {
+          elem.dataset.ordering = "dash";
+        });
+        dataset.ordering = ordering;
+        let n_ordering = 0;
+        if (dataset.ordering == "asc"){
+          n_ordering = 1;
+        } else if (dataset.ordering == "desc") {
+          n_ordering = -1;
+        }
+        if (nm == "name") {
+          g_sort_params = [["is_dir", 1], [nm, n_ordering]];
+        } else if (nm == "size") {
+          g_sort_params = [[nm, n_ordering], ["is_dir", 1], ["name", 1]];
+        } else if (nm == "ext") {
+          g_sort_params = [[nm, n_ordering], ["is_dir", 1], ["name", 1]];
+        } else if (nm == "mtime") {
+          g_sort_params = [[nm, n_ordering], ["is_dir", 1], ["name", 1]];
+        }
+        sort_list(g_sort_params);
+      }
+    }
+
+
+
+
+
+
   </script>
 </head>
 
 <body>
+  <div id="context-menu" class="click" style="display: none;">
+    <div class="item context click">cmd</div>
+    <div class="item context click">powershell</div>
+  </div>
   <div class="container">
     <div class="top-bar">
       <div class="ext-container">
@@ -761,7 +866,7 @@
         <div class="fileheader">
           <div class="file-header">
             <div class="cell file">
-              <div class="ordering data" data-ordering_name="name" data-ordering="asc">
+              <div class="ordering data click" data-ordering_name="name" data-ordering="asc">
                 <i class="fa-solid fa-circle-chevron-up asc"></i>
                 <i class="fa-solid fa-circle-chevron-down desc"></i>
                 <i class="fa-solid fa-circle-minus dash"></i>
@@ -770,7 +875,7 @@
             </div>
             <div class="cell browser"></div>
             <div class="cell size">
-              <div class="ordering data" data-ordering_name="size" data-ordering="dash">
+              <div class="ordering data click" data-ordering_name="size" data-ordering="dash">
                 <i class="fa-solid fa-circle-chevron-up asc"></i>
                 <i class="fa-solid fa-circle-chevron-down desc"></i>
                 <i class="fa-solid fa-circle-minus dash"></i>
@@ -778,7 +883,7 @@
               </div>
             </div>
             <div class="cell ext">
-              <div class="ordering data" data-ordering_name="ext"data-ordering="dash">
+              <div class="ordering data click" data-ordering_name="ext"data-ordering="dash">
                 <i class="fa-solid fa-circle-chevron-up asc"></i>
                 <i class="fa-solid fa-circle-chevron-down desc"></i>
                 <i class="fa-solid fa-circle-minus dash"></i>
@@ -786,7 +891,7 @@
               </div>
             </div>
             <div class="cell date">
-              <div class="ordering data" data-ordering_name="mtime" data-ordering="dash">
+              <div class="ordering data click" data-ordering_name="mtime" data-ordering="dash">
                 <i class="fa-solid fa-circle-chevron-up asc"></i>
                 <i class="fa-solid fa-circle-chevron-down desc"></i>
                 <i class="fa-solid fa-circle-minus dash"></i>
@@ -807,6 +912,7 @@
 
     <div class="con-lst">
     </div>
+
 
   </div>
 </body>

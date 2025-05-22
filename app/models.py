@@ -1,6 +1,6 @@
 from pydantic import BaseModel
 from typing import List, Dict
-from app.enums import WidgetId, ActionId, StateKey, ContentTemplate, GalleryType, OpenPathType
+from app.enums import WidgetId, ActionId, StateKey, ContentTemplate, GalleryType, OpenPathType, ContextmenuType
 
 
 class BaseMsg(BaseModel):
@@ -17,10 +17,12 @@ class FolderReq(BaseMsg):
 class OpenPathReq(BaseMsg):
     open_path_type: OpenPathType = OpenPathType.AUTO
     path: str
+    cmd_name: str | None = None
 
 class OpenPathRes(BaseMsg):
     open_path_type: OpenPathType
     path: str
+    cmd_name: str | None = None
 
 class PathItem(BaseModel):
     is_dir: bool
@@ -67,6 +69,11 @@ class GetLinkReq(BaseMsg):
 class GetLinkRes(BaseMsg):
     items: List[Link]
 
+class Contextmenu(BaseModel):
+    name: str
+    cmd: str
+    cmd_type: ContextmenuType = ContextmenuType.ALL
+
 class State(BaseModel):
     template: ContentTemplate = ContentTemplate.CONTENT_LIST
     gallery_type: GalleryType = GalleryType.LAYOUT_LIST
@@ -76,6 +83,7 @@ class State(BaseModel):
 
 class OnLoadRes(BaseMsg):
     state: State
+    contextmenu: List[Contextmenu]
 
 def createFolderReq (
         sender=WidgetId.PY_BROWSER,

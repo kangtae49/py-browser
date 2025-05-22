@@ -14,7 +14,15 @@ const OpenPathType = z.enum([
     "WEBVIEW",
     "APPLICATION",
     "BROWSER",
+    "CMD",
 ]);
+
+const ContextmenuType = z.enum([
+    "ONLY_DIR",
+    "ONLY_FILE",
+    "ALL",
+]);
+
 
 const GalleryType = z.enum([
     "LAYOUT_LIST",
@@ -61,11 +69,13 @@ const FolderReq = BaseMsg.extend({
 const OpenPathReq = BaseMsg.extend({
     open_path_type: OpenPathType.default(OpenPathType.enum.AUTO),
     path: z.string(),
+    cmd_name: z.string().nullable(),
 });
 
 const OpenPathRes = BaseMsg.extend({
     open_path_type: OpenPathType.default(OpenPathType.enum.AUTO),
     path: z.string(),
+    cmd_name: z.string().nullable(),
 });
 
 const PathItem = z.lazy(() =>
@@ -122,6 +132,12 @@ const GetLinkRes = BaseMsg.extend({
     items: z.array(Link),
 });
 
+const Contextmenu = z.object({
+    name: z.string(),
+    cmd: z.string(),
+    cmd_type: ContextmenuType.default(ContextmenuType.enum.ALL),
+});
+
 const State = z.object({
     template: ContentTemplate,
     gallery_type: GalleryType,
@@ -132,6 +148,7 @@ const State = z.object({
 
 const OnLoadRes = BaseMsg.extend({
     state: State,
+    contextmenu: z.array(Contextmenu),
 });
 
 

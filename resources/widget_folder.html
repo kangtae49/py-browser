@@ -65,7 +65,7 @@
           tree_node.appendChild(ul);
         } else {
           items = res.item.items;
-          const li_parent = document.querySelector("li[data-path='" + encodeURIComponent(res.item.path) + "']");
+          const li_parent = document.querySelector(`li[data-path="${CSS.escape(res.item.path) }"]`);
           const ul_children = li_parent.querySelector("ul");
           if (!ul_children){
             ul = document.createElement("ul");
@@ -80,7 +80,7 @@
           const li = document.createElement("li");
           frag.appendChild(li);
           li.dataset.is_dir = item.is_dir;
-          li.dataset.path = encodeURIComponent(item.path);
+          li.dataset.path = item.path;
           li.dataset.name = item.name;
           if (item.is_dir) {
             li.dataset.tot = item.tot;
@@ -160,7 +160,7 @@
       }
 
       const go_path = (res) => {
-        const li = document.querySelector("li[data-path='" + encodeURIComponent(res.select_path) + "']");
+        const li = document.querySelector(`li[data-path="${CSS.escape(res.select_path)}"]`);
         if (li){
           document.querySelectorAll(".tree li").forEach(el => {
             el.classList.remove("selected");
@@ -189,7 +189,7 @@
 
         const li = event.currentTarget.closest("li");
         const dataset = li.dataset;
-        const path = decodeURIComponent(dataset.path);
+        const path = dataset.path;
 
         document.querySelectorAll(".tree li").forEach(el => {
           el.classList.remove("selected");
@@ -201,7 +201,7 @@
       const toggle_folder = (event) => {
         const li = event.currentTarget.closest("li");
         const dataset = li.dataset;
-        const path = decodeURIComponent(dataset.path);
+        const path = dataset.path;
 
         document.querySelectorAll(".tree li").forEach(el => {
           el.classList.remove("selected");

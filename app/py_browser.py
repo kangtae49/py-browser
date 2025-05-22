@@ -1,5 +1,8 @@
-import os
+from typing import Dict
 import math
+import shutil
+import shlex
+import subprocess
 import wx
 from dataclasses import dataclass
 from pathlib import Path
@@ -10,9 +13,9 @@ from wx.html2 import WebView
 from app.utils.file_utils import get_default_root_path, get_resource_path, get_mimetype_head, get_mimetype
 from app.utils.file_utils import count_path
 
-from app.enums import WidgetId, ContentTemplate, GalleryType, StateKey, OpenPathType
+from app.enums import WidgetId, ContentTemplate, GalleryType, StateKey, OpenPathType, ContextmenuType
 from app.models import createFolderReq
-from app.models import BaseMsg, State
+from app.models import BaseMsg, State, Contextmenu
 from app.models import FolderReq, FolderRes, PathItem
 from app.models import GetStateReq, GetStateRes
 from app.models import SetStateReq, SetStateRes
@@ -29,6 +32,7 @@ class PyBrowser(wx.Frame):
         self._mgr.SetManagedWindow(self)
         self._webviews = {}
         self._widgets = {}
+        self._contextmenu: Dict[str, Contextmenu] = self._init_contextmenu()
 
         self._state = State()
 
@@ -96,6 +100,17 @@ class PyBrowser(wx.Frame):
         # )
 
         self._mgr.Update()
+
+    def _init_contextmenu(self):
+        contextmenu = {
+            "cmd": Contextmenu(name="cmd", cmd="cmd.exe /k cd %V", cmd_type=ContextmenuType.ONLY_DIR),
+            "powershell": Contextmenu(name="powershell", cmd="powershell.exe -noexit -command Set-Location -literalPath '%V'", cmd_type=ContextmenuType.ONLY_DIR),
+        }
+        if shutil.which("Code.CMD"):
+            contextmenu.update([
+                ("code", Contextmenu(name="code", cmd="Code.CMD \"%V\"", cmd_type=ContextmenuType.ALL))
+            ])
+        return contextmenu
 
     def _get_state(self) -> State:
         return self._state
@@ -262,6 +277,16 @@ class PyBrowser(wx.Frame):
             return
         elif req.open_path_type == OpenPathType.AUTO:
             pass
+        elif req.open_path_type == OpenPathType.CMD:
+            contextmenu = self._contextmenu[req.cmd_name]
+            cmd = contextmenu.cmd
+            cmd_type = contextmenu.cmd_type
+            run_path = path
+            if cmd_type == ContextmenuType.ONLY_DIR and path.is_file():
+                run_path = path.parent
+            cmd = cmd.replace('%V', run_path.absolute().as_posix())
+            subprocess.Popen(cmd, creationflags=subprocess.CREATE_NEW_CONSOLE)
+            return
 
         # OpenPathType.AUTO
         if path.is_file():
@@ -292,6 +317,7 @@ class PyBrowser(wx.Frame):
                     action=req.action,
                     open_path_type=req.open_path_type,
                     path=req.path,
+                    cmd_name=req.cmd_name,
                 )
                 self.runScriptAsync(res)
 
@@ -366,6 +392,7 @@ class PyBrowser(wx.Frame):
             items=items
         )
         self.runScriptAsync(res)
+
 
 def main():
     app = wx.App(False)

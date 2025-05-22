@@ -14,7 +14,8 @@ send_open_path = ({
     action=ActionId.enum.OPEN_PATH,
     open_path_type=OpenPathType.enum.AUTO,
     path=null,
-} = {}) => { Pb.sendMessage(OpenPathReq.parse({sender_id, receiver_id,action, open_path_type, path, }));}
+    cmd_name=null,
+} = {}) => { Pb.sendMessage(OpenPathReq.parse({sender_id, receiver_id,action, open_path_type, path, cmd_name,}));}
 
 send_get_link = ({
     sender_id=WidgetId.enum.WIDGET_FOLDER,
