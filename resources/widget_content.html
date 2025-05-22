@@ -29,6 +29,7 @@
     .top-bar .dir-up {display: inline-block; cursor:pointer; color: #1e3050;}
     .top-bar .dir-browser {display: inline-block; cursor:pointer; color: #1e3050;}
     .top-bar .cell.cur-dir {cursor: pointer; display: inline-block;}
+    .top-bar .cell.cur-dir .dir {display: inline-block;}
     .top-bar .cell.cur-dir .dir-all {display: inline-block;}
     .top-bar .cell.cur-dir .dir-all .dir-part {display: inline-block; cursor: pointer;}
     .top-bar .cell.cur-dir .dir-all .dir-part:hover { background-color: #bad0e4;}
@@ -161,7 +162,6 @@
     const open_contextmenu = (event) => {
       const dataset = event.target.closest(".data").dataset;
       const div_menu = document.querySelector("#context-menu");
-      console.log(`x: ${event.pageX}, ${event.pageY}`);
       div_menu.classList.add(["data"]);
       div_menu.dataset.path = dataset.path;
       div_menu.dataset.name = dataset.name;
@@ -405,7 +405,8 @@
       const cur_dir = document.querySelector(".cur-dir");
       cur_dir.dataset.path = res.path;
       
-      const cur_dir_icon = cur_dir.querySelector("i");
+      const cur_dir_icon = cur_dir.querySelector(".dir");
+      cur_dir_icon.title = res.item.tot;
       const cur_dir_browser = cur_dir.querySelector(".dir-browser");
       cur_dir_browser.addEventListener("click", click_path_browser);
       const cur_dir_up = cur_dir.querySelector(".dir-up");
@@ -855,7 +856,8 @@
         </div>
       </div>
       <div class="cur-path">
-        <div class="cell cur-dir data"><i class="fa-solid fa-folder"></i>
+        <div class="cell cur-dir data">
+          <div class="dir"><i class="fa-solid fa-folder"></i></div>
           <div class="dir-all">
           </div>
           <div class="dir-up"><i class="fa-solid fa-arrow-up"></i></div>
